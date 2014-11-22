@@ -1,0 +1,38 @@
+[root]
+name = "gallium"
+version = "0.0.1"
+dependencies = [
+ "Rust-X11 0.0.1 (git+https://github.com/ARCADIVS/Rust-X11.git)",
+ "xlib 0.1.0 (git+https://github.com/servo/rust-xlib.git)",
+]
+
+[[package]]
+name = "Rust-X11"
+version = "0.0.1"
+source = "git+https://github.com/ARCADIVS/Rust-X11.git#c716aca63078e3b9de297597618dcbe66024bfde"
+dependencies = [
+ "new_type 0.0.1 (git+https://github.com/ARCADIVS/Rust-X11.git)",
+ "refined_type 0.0.1 (git+https://github.com/ARCADIVS/Rust-X11.git)",
+ "syntax_extensions 0.0.1 (git+https://github.com/ARCADIVS/Rust-X11.git)",
+]
+
+[[package]]
+name = "new_type"
+version = "0.0.1"
+source = "git+https://github.com/ARCADIVS/Rust-X11.git#c716aca63078e3b9de297597618dcbe66024bfde"
+
+[[package]]
+name = "refined_type"
+version = "0.0.1"
+source = "git+https://github.com/ARCADIVS/Rust-X11.git#c716aca63078e3b9de297597618dcbe66024bfde"
+
+[[package]]
+name = "syntax_extensions"
+version = "0.0.1"
+source = "git+https://github.com/ARCADIVS/Rust-X11.git#c716aca63078e3b9de297597618dcbe66024bfde"
+
+[[package]]
+name = "xlib"
+version = "0.1.0"
+source = "git+https://github.com/servo/rust-xlib.git#58ec3847b592aeabdcfeb6a2d02033d3a2c7f427"
+

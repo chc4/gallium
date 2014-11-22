@@ -1,0 +1,14 @@
+[package]
+
+name = "gallium"
+version = "0.0.1"
+authors = ["Charlie Cummings <chc4000@gmail.com>"]
+
+[dependencies.xlib]
+git = "https://github.com/servo/rust-xlib.git"
+
+[dependencies.Rust-X11]
+git = "https://github.com/ARCADIVS/Rust-X11.git"
+
+[[bin]]
+name = "gallium"
