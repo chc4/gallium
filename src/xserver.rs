@@ -173,7 +173,7 @@ impl XServer {
         self.keys.push(k)
     }
 
-    pub fn clear_keys(&mut self){
+    pub fn grab_keys(&mut self){
          unsafe {
             XUngrabKey(self.display, 0 /*AnyKey*/, (1<<15) /*AnyModifier*/, self.root);
         }
@@ -187,6 +187,14 @@ impl XServer {
             }
         }
     }
+
+    pub fn clear_keys(&mut self){
+        self.keys.clear();
+        unsafe {
+            XUngrabKey(self.display, 0 /*AnyKey*/, (1<<15) /*AnyModifier*/, self.root);
+        }
+    }
+
     //There isn't a very good place for this.
     //It was in config, but it would be magically affecting the keys Vec<T>
     pub fn parse_key(&mut self, k: &mut KeyBind) -> Key {
