@@ -98,9 +98,10 @@ pub struct XServer {
     keys: Vec<Key>
 }
 
+//Actually just a wrapper around XEvents of the same name, but more info
 pub enum ServerEvent {
-    ButtonPressed,
-    KeyPressed
+    ButtonPress,
+    KeyPress
 }
 
 pub fn keysym_to_string(sym: KeySym) -> CString {
@@ -158,14 +159,14 @@ impl XServer {
             ButtonPress => unsafe {
                 let ev = self.get_event_as::<XButtonPressedEvent>();
                 println!("Pressed button {}",(*ev).state);
-                ButtonPressed
+                ServerEvent::ButtonPress
             },
             KeyPress => unsafe {
                 let ev = self.get_event_as::<XKeyPressedEvent>();
                 println!("Key pressed {}",(*ev).keycode);
-                KeyPressed
+                ServerEvent::KeyPress
             },
-            _ => ButtonPressed
+            _ => ServerEvent::ButtonPress
         }
     }
 
@@ -199,9 +200,10 @@ impl XServer {
     //It was in config, but it would be magically affecting the keys Vec<T>
     pub fn parse_key(&mut self, k: &mut KeyBind) -> Key {
         if k.binding.is_none() {
-            k.binding = Some(Key::create(k.chord.clone(),self));
-            self.add_key(k.binding.unwrap());
-            k.binding.unwrap()
+            let bind = Key::create(k.chord.clone(),self);
+            k.binding = Some(bind);
+            self.add_key(bind);
+            bind 
         }
         else {
             k.binding.unwrap()

@@ -14,23 +14,11 @@ pub struct KeyBind {
     pub chord: String
 }
 
-impl KeyBind {
+impl KeyBind{
     pub fn create(s: String) -> KeyBind {
         KeyBind {
             binding: None,
             chord: s
-        }
-    }
-    pub fn parse(&mut self, serv: &mut XServer) -> Key {
-        //Since Xorg is terrible, you have to explicitly list all keys to listen for
-        //Add each Key we parse to a list, so we can window_system.grab_keys() later
-        if  self.binding.is_none() {
-            self.binding = Some(Key::create(self.chord.clone(),serv));
-            serv.add_key(self.binding.unwrap());
-            self.binding.unwrap()
-        }
-        else {
-            self.binding.unwrap()
         }
     }
     pub fn unwrap(self) -> Key {

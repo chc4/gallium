@@ -1,10 +1,11 @@
 use xserver::{XServer,Window,Display,Screen,XDefaultScreenOfDisplay};
-use layout::{Layouts,Tall};
+use layout::{Layouts};
 use config::{Config,ConfigLock};
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::slice::PartialEqSlicePrelude;
 use std::cmp::PartialEq;
+use std::ptr;
 
 //A Vec<T> that has a `current` member.
 //Selecting a new current will move that card to the top of the deck
@@ -62,14 +63,20 @@ struct Monitor {
     screen: Screen,
     workspace: Rc<Workspace>,
 }
-pub struct WindowManager {
+
+//This is literally terrible, but can't work with references+lifetimes.
+//There is no way to tell rustc that
+//the selected Monitor is always inside the screens Vec
+//nor can we say the workspaces Vec holds references only into screens.workspace 
+//(note that is a lie, could use unsafe copy_lifetime and then be careful)
+pub struct WindowManager<'a> {
     screens: Vec<Rc<Monitor>>,
     selected: Rc<Monitor>,
     workspaces: Vec<Rc<Workspace>> //Vec<Workspace>? List of all workspaces so we can increment each Screen
 }
 
-impl WindowManager {
-    pub fn new(serv: &XServer, config: &ConfigLock) -> WindowManager {
+impl<'a> WindowManager<'a> {
+    pub fn new(serv: &XServer, config: &ConfigLock) -> WindowManager<'a> {
         //TODO: Figure out how the heck XineramaScreenInfo is used for this
         //Preferably without having to recreate the Screen class to use it
         //let xine_enabled = unsafe { XineramaQueryExtension(serv.display) };
@@ -83,18 +90,18 @@ impl WindowManager {
         let wind_deck = Deck::new();
         let work = Rc::new(Workspace {
             windows: wind_deck,
-            layout: Tall,
+            layout: Layouts::Tall,
             master: None
         });
         let scr = Rc::new(Monitor {
-            screen: unsafe { *XDefaultScreenOfDisplay(serv.display) }, //Reused from XServer::new() :(
+            screen: unsafe { ptr::read(&*XDefaultScreenOfDisplay(serv.display.clone())) }, //Reused from XServer::new() :(
             workspace: work.clone()
         });
         screens.push(scr.clone());
         WindowManager {
             screens: screens,
             selected: scr,
-            workspaces: vec!(work.clone())
+            workspaces: vec!(work)
         }
     }
 }

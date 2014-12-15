@@ -4,6 +4,7 @@ use xserver::{XServer,keysym_to_string};
 
 pub bitflags! {
     #[allow(non_upper_case_globals)]
+    #[deriving(Copy)]
     flags KeyMod: u32 {
         const Shift = 0b00000001,
         const Lock = 0b00000010,
@@ -16,7 +17,7 @@ pub bitflags! {
     }
 }
 
-#[deriving(PartialEq,Eq,Clone)]
+#[deriving(PartialEq,Eq,Clone,Copy)]
 pub struct Key {
     pub code: KeyCode,
     pub sym: KeySym,

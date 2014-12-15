@@ -18,14 +18,14 @@ pub mod key;
 pub mod xserver;
 pub mod layout;
 
-struct Gallium {
+struct Gallium<'a> {
     config: ConfigLock,
-    window_manager: WindowManager,
+    window_manager: WindowManager<'a>,
     window_server: XServer
 }
 
-impl Gallium {
-    fn setup() -> Gallium {
+impl<'a> Gallium<'a> {
+    fn setup() -> Gallium<'a> {
         let mut window_server = unsafe { XServer::new() };
         let mut config = Config::new();
         config.setup(&mut window_server);
