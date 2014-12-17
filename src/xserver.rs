@@ -100,8 +100,10 @@ pub struct XServer {
 
 //Actually just a wrapper around XEvents of the same name, but more info
 pub enum ServerEvent {
-    ButtonPress,
-    KeyPress
+    ButtonPress((i32,i32)),
+    KeyPress(Key),
+    CreateNotify(Window,(i32,i32)),
+    Unknown
 }
 
 pub fn keysym_to_string(sym: KeySym) -> CString {
@@ -136,10 +138,16 @@ impl XServer {
         }
     }
 
-    fn get_event_as<T>(&self) -> *mut T { //XEvent as XKeyPressedEvent
+    pub fn map(&mut self,wind: Window){
+        unsafe {
+            XMapWindow(self.display,wind);
+        }
+    }
+
+    fn get_event_as<T>(&self) -> &T { //XEvent as XKeyPressedEvent
         let ev: *mut XEvent = self.event;
         unsafe {
-            ev as *mut T
+            &*(ev as *mut T)
         }
     }
 
@@ -158,15 +166,24 @@ impl XServer {
         match event_type {
             ButtonPress => unsafe {
                 let ev = self.get_event_as::<XButtonPressedEvent>();
-                println!("Pressed button {}",(*ev).state);
-                ServerEvent::ButtonPress
+                println!("Pressed button {}",ev.state);
+                ServerEvent::ButtonPress((ev.x,ev.y))
             },
             KeyPress => unsafe {
                 let ev = self.get_event_as::<XKeyPressedEvent>();
-                println!("Key pressed {}",(*ev).keycode);
-                ServerEvent::KeyPress
+                println!("Key pressed {}",ev.keycode);
+                //let m = KeyMod::from_bits(ev.state).unwrap_or(KeyMod::empty());
+                //ServerEvent::KeyPress(ev.keycode,m)
+                let k = Key::parse(ev.keycode as KeyCode,ev.state,self);
+                ServerEvent::KeyPress(k)
             },
-            _ => ServerEvent::ButtonPress
+            CreateNotify => unsafe {
+                let ev = self.get_event_as::<XCreateWindowEvent>();
+                println!("Window added {}",ev.window);
+                println!(">(X,Y) ({},{})",ev.x,ev.y);
+                ServerEvent::CreateNotify(ev.window,(ev.x,ev.y))
+            },
+            _ => ServerEvent::Unknown
         }
     }
 
@@ -217,7 +234,7 @@ impl XServer {
         }
     }
 
-    fn keycode_to_keysym(&self,code: KeyCode) -> KeySym {
+    pub fn keycode_to_keysym(&self,code: KeyCode) -> KeySym {
         unsafe {
             XkbKeycodeToKeysym(&*self.display, code, 0, 0)
         }

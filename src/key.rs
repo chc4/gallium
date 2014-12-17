@@ -39,7 +39,7 @@ impl Show for Key {
 }
 
 impl Key {
-    /*pub fn parse(code: KeyCode, modifier: u32, serv: &XServer) -> Key {
+    pub fn parse(code: KeyCode, modifier: u32, serv: &XServer) -> Key {
         let mut sym = 0;
         unsafe {
             sym = serv.keycode_to_keysym(code);
@@ -53,7 +53,7 @@ impl Key {
             sym: sym,
             modifier: mo
         }
-    }*/
+    } 
 
     pub fn create(s: String, serv: &XServer) -> Key {
         let mut flag = 0u32;
