@@ -6,7 +6,6 @@ use std::cell::RefCell;
 use std::slice::PartialEqSlicePrelude;
 use std::cmp::PartialEq;
 use std::ptr;
-use std::mem;
 
 //A Vec<T> that has a `current` member.
 //Selecting a new current will move that card to the top of the deck
@@ -74,9 +73,9 @@ pub struct Monitor<'a> {
     pub workspace: uint,
 }
 
-//Like jesus christ I hate everything.
-//I tried out lifetimes + copy_lifetime and after like 45 minutes of wrestling
-//with the borrow checker, it compiled. And then immediately segfaults when I try to push.
+//This is now magically index-based because jesus christ
+//I blame the person on IRC who told me to use copy_lifetime.
+//Because you can't. That's Completely Illegal(tm).
 pub struct WindowManager<'a> {
     screens: Vec<Monitor<'a>>,
     pub curr_screen: uint,
@@ -107,14 +106,14 @@ impl<'a> WindowManager<'a> {
             let screens_: *const XineramaScreenInfo = unsafe { XineramaQueryScreens(serv.display, &num_screens) };
             XFree(screens_);
         }*/
-        let mut wind_deck = Deck::new();
-        let mut work = Workspace {
+        let wind_deck = Deck::new();
+        let work = Workspace {
             windows: wind_deck,
             layout: Layouts::Tall,
             master: None
         };
         works.push(work);
-        let mut scr = Monitor {
+        let scr = Monitor {
             screen: unsafe { ptr::read(&*XDefaultScreenOfDisplay(serv.display.clone())) }, //Reused from XServer::new() :(
             workspace: 0
         };

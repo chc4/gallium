@@ -1,25 +1,21 @@
 extern crate libc;
-use xlib::XKeysymToString;
 use self::libc::funcs::c95::stdlib::malloc;
-use self::libc::{c_int,c_uint};
-use std::mem::uninitialized;
 pub use xlib::*;
 pub use key::{
     Key,
     KeyMod,
-    Shift,
-    Lock,
-    Control,
-    Mod1,
-    Mod2,
-    Mod3,
-    Mod4,
-    Mod5,
+    SHIFT,
+    LOCK,
+    CONTROL,
+    MOD1,
+    MOD2,
+    MOD3,
+    MOD4,
+    MOD5 
 };
 use config::KeyBind;
 use std::c_str::CString;
-use std::mem::size_of;
-use std::ptr::{null,null_mut};
+use std::ptr::{null_mut};
 
 //Event types
 const KeyPress: i32       = 2i32;
@@ -201,7 +197,7 @@ impl XServer {
         for key in self.keys.iter(){
             unsafe {
                 XGrabKey(self.display, key.code as i32, key.modifier.bits(), self.root, true as i32, GrabModeAsync, GrabModeAsync);
-                XGrabKey(self.display, key.code as i32, (key.modifier | Lock).bits(), self.root, true as i32, GrabModeAsync, GrabModeAsync);
+                XGrabKey(self.display, key.code as i32, (key.modifier | LOCK).bits(), self.root, true as i32, GrabModeAsync, GrabModeAsync);
             }
         }
     }

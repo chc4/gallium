@@ -5,7 +5,7 @@ trait Layout {
     fn resize(&mut self, vert: u64, horz: u64);
 }
 
-#[deriving(Show)]
+#[deriving(Copy)]
 pub enum Layouts {
     Tall,
     Wide,

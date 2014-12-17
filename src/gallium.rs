@@ -24,7 +24,7 @@ impl<'a> Gallium<'a> {
         let mut window_server = unsafe { XServer::new() };
         let mut config = Config::new();
         config.setup(&mut window_server);
-        let mut window_manager = WindowManager::new(&window_server,&config);
+        let window_manager = WindowManager::new(&window_server,&config);
 
         Gallium {
             config: config,
@@ -52,7 +52,7 @@ impl<'a> Gallium<'a> {
 }
 
 fn main(){
-    let mut gl = Gallium::setup();
+    let gl = Gallium::setup();
     debug!("Gallium has been setup.");
     gl.start();
 }

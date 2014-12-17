@@ -3,17 +3,17 @@ use xlib::{KeyCode,KeySym};
 use xserver::{XServer,keysym_to_string};
 
 pub bitflags! {
-    #[allow(non_upper_case_globals)]
     #[deriving(Copy)]
+    #[allow(non_upper_case_globals)] 
     flags KeyMod: u32 {
-        const Shift = 0b00000001,
-        const Lock = 0b00000010,
-        const Control = 0b00000100,
-        const Mod1 = 0b00001000,
-        const Mod2 = 0b00010000,
-        const Mod3 = 0b00100000,
-        const Mod4 = 0b01000000,
-        const Mod5 = 0b10000000,
+        const SHIFT = 0b00000001,
+        const LOCK = 0b00000010,
+        const CONTROL = 0b00000100,
+        const MOD1 = 0b00001000,
+        const MOD2 = 0b00010000,
+        const MOD3 = 0b00100000,
+        const MOD4 = 0b01000000,
+        const MOD5 = 0b10000000,
     }
 }
 
@@ -41,9 +41,7 @@ impl Show for Key {
 impl Key {
     pub fn parse(code: KeyCode, modifier: u32, serv: &XServer) -> Key {
         let mut sym = 0;
-        unsafe {
-            sym = serv.keycode_to_keysym(code);
-        }
+        sym = serv.keycode_to_keysym(code);
         let mo = match KeyMod::from_bits(modifier) {
             Some(v) => v,
             None => KeyMod::empty()
