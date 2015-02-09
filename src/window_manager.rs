@@ -3,51 +3,66 @@ use layout::{Layouts};
 use config::{Config,ConfigLock};
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::slice::PartialEqSlicePrelude;
+//use std::slice::PartialEqSlicePrelude;
 use std::cmp::PartialEq;
 use std::ptr;
 
 //A Vec<T> that has a `current` member.
 //Selecting a new current will move that card to the top of the deck
+#[derive(PartialEq)]
 pub struct Deck<T>{
-    cards: Vec<Rc<RefCell<T>>>, //If you get weird mutability errors, RefCell<T>
-    current: Option<Rc<RefCell<T>>> 
+    cards: Vec<T>, //If you get weird mutability errors, RefCell<T>
+    current: Option<usize> 
 }
 
-impl<T: Eq> Deck<T>{
+impl<T: PartialEq> Deck<T>{
     fn new() -> Deck<T>{
         Deck {
             cards: Vec::new(),
             current: None
         }
     }
-    pub fn push(&mut self,card: T){
-        let re = Rc::new(RefCell::new(card));
-        self.cards.push(re.clone());
-        self.current = Some(re);
+    
+    pub fn select(&mut self, ind: usize){
+        if ind >= self.cards.len() {
+            panic!("Selected a card index that doesn't exist");
+        }
+        self.current = Some(ind)
     }
-    pub fn pop(&mut self) -> Option<Rc<RefCell<T>>>{
+    pub fn current(&mut self) -> Option<&mut T>{
+        if self.current.is_none() || self.current.unwrap() >= self.cards.len() {
+            return None
+        }
+        Some(&mut self.cards[self.current.unwrap()])
+    }
+
+    pub fn push(&mut self,card: T){
+        self.cards.push(card);
+        if self.current.is_none() {
+            self.current = Some(self.cards.len()-1);
+        }
+    }
+    pub fn pop(&mut self) -> Option<T>{
         let r = self.cards.pop();
-        let ref curr = self.current.clone();
-        if curr.is_some() && r.is_some() && curr.clone().unwrap() == r.clone().unwrap() {
+        if self.current.is_some() && self.cards.len() >= self.current.unwrap() {
             self.current = None;
         }
-        r
+        Some(r.unwrap())
     }
-    fn swap(&mut self,pos1: uint,pos2: uint){
-        self.cards.swap(pos1,pos2);
+    fn swap(&mut self,pos1: u32,pos2: u32){
+        self.cards.swap(pos1 as usize,pos2 as usize);
     }
     //This is O(n) and re-allocates everything right of the index. It's bad.
-    fn remove(&mut self,card: &Rc<RefCell<T>>) -> Option<Rc<RefCell<T>>> {
+    fn remove(&mut self,card: &T) -> Option<T> {
         let ind = self.cards.as_slice().position_elem(card);
         if ind.is_none() {
             return None
         }
         let k = self.cards.remove(ind.unwrap());
-        if k.is_some() && k.clone().unwrap().eq(card) {
+        if self.current.unwrap() >= ind.unwrap() {
             self.current = None
         }
-        k
+        Some(k)
     }
 }
 //WorkspaceManager is ~indirection~
@@ -55,6 +70,7 @@ impl<T: Eq> Deck<T>{
 //    -> many Displays
 //        -> Workspaces mapped to Displays
 //            -> Windows mapped to Workspaces
+#[derive(PartialEq)]
 pub struct Workspace<'a> {
     pub windows: Deck<Window>, //Is treated as a stack of the most recent windows
     pub layout: Layouts,
@@ -70,7 +86,7 @@ impl<'a> Workspace<'a>{
 pub struct Monitor<'a> {
     //Always one display, but mutable workspace + layout bound to it
     screen: Screen,
-    pub workspace: uint,
+    pub workspace: u32,
 }
 
 //This is now magically index-based because jesus christ
@@ -78,29 +94,18 @@ pub struct Monitor<'a> {
 //Because you can't. That's Completely Illegal(tm).
 pub struct WindowManager<'a> {
     screens: Vec<Monitor<'a>>,
-    pub curr_screen: uint,
-    pub curr_workspace: uint,
-    workspaces: Vec<Workspace<'a>> //Vec<Workspace>? List of all workspaces so we can increment each Screen
+    curr_screen: u32,
+    pub workspaces: Deck<Workspace<'a>> //Vec<Workspace>? List of all workspaces so we can increment each Screen
 }
 
 impl<'a> WindowManager<'a> {
-    /// Return the current workspace
-    pub fn workspace(&mut self) -> &mut Workspace<'a>{
-       let c_w = self.curr_workspace;
-       &mut self.workspaces[c_w]
-    }
-    /// Returns the current screen
-    pub fn screen(&mut self) -> &mut Monitor<'a>{
-        let c_s = self.curr_screen;
-        &mut self.screens[c_s]
-    }
     pub fn new(serv: &XServer, config: &ConfigLock) -> WindowManager<'a> {
         //TODO: Figure out how the heck XineramaScreenInfo is used for this
         //Preferably without having to recreate the Screen class to use it
         //let xine_enabled = unsafe { XineramaQueryExtension(serv.display) };
         //let num_screens = 1;
         let mut screens = Vec::new();
-        let mut works = Vec::new();
+        let mut works = Deck::new();
         /*if xine_enabled {
             debug!("Xinerama is enabled!");
             let screens_: *const XineramaScreenInfo = unsafe { XineramaQueryScreens(serv.display, &num_screens) };
@@ -121,7 +126,6 @@ impl<'a> WindowManager<'a> {
         WindowManager {
             screens: screens,
             curr_screen: 0,
-            curr_workspace: 0,
             workspaces: works
         }
     }

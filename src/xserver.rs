@@ -14,7 +14,7 @@ pub use key::{
     MOD5 
 };
 use config::KeyBind;
-use std::c_str::CString;
+use std::ffi::{CString,c_str_to_bytes};
 use std::ptr::{null_mut};
 
 //Event types
@@ -82,7 +82,7 @@ const ColormapChangeMask: i64      = (1i64<<23);
 const OwnerGrabButtonMask: i64     = (1i64<<24);
 
 extern {
-    pub fn XkbKeycodeToKeysym(dpy: *const Display, kc: KeyCode, group: uint, level: uint) -> KeySym;
+    pub fn XkbKeycodeToKeysym(dpy: *const Display, kc: KeyCode, group: usize, level: usize) -> KeySym;
 }
 
 //This is not going to be window server agnostic like wtftw is. Sorry, too hard
@@ -106,7 +106,8 @@ pub fn keysym_to_string(sym: KeySym) -> CString {
     unsafe {
         let s: *const i8 = &*XKeysymToString(sym);
         //I don't know enough about Rust FFI to know if this will memory leak, but I fear it will
-        CString::new(s,false)
+        //CString::from_slice(&*(s as *const u8))
+        CString::from_slice(c_str_to_bytes(&s))
     }
 }
 
@@ -122,7 +123,7 @@ impl XServer {
         if screen == null_mut() {
             panic!("No default screen found, exiting.");
         }
-        debug!("XServer display: {}",disp);
+        debug!("XServer display: {:?}",disp);
         let root = XRootWindow(disp, screen_num);
         XSelectInput(disp,root,SubstructureNotifyMask|SubstructureRedirectMask|PropertyChangeMask|KeyPressMask | KeyReleaseMask | ButtonPressMask);
         XSync(disp,1);
@@ -136,7 +137,7 @@ impl XServer {
 
     pub fn map(&mut self,wind: Window){
         unsafe {
-            XMapWindow(self.display,wind);
+            //XMapWindow(self.display,wind);
         }
     }
 
@@ -149,7 +150,7 @@ impl XServer {
 
     pub fn get_event(&mut self) -> ServerEvent {
         debug!("Calling XNextEvent");
-        debug!("disp: {} event: {}", self.display, self.event);
+        debug!("disp: {:?} event: {:?}", self.display, self.event);
         unsafe {
             XNextEvent(self.display, self.event);
         }
@@ -223,10 +224,10 @@ impl XServer {
         }
     }
 
-    pub fn string_to_keysym(&self,s: &String) -> KeySym {
+    pub fn string_to_keysym(&self,s: &mut String) -> KeySym {
         unsafe {
-            let mut x = s.to_c_str();
-            XStringToKeysym(x.as_mut_ptr())
+            let mut x = CString::from_slice(s.as_mut_vec().as_mut_slice());
+            XStringToKeysym(x.as_ptr() as *mut i8)
         }
     }
 

@@ -2,11 +2,25 @@
 name = "gallium"
 version = "0.0.1"
 dependencies = [
+ "rustc-serialize 0.2.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "xlib 0.1.0 (git+https://github.com/servo/rust-xlib.git)",
 ]
 
 [[package]]
+name = "bitflags"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "rustc-serialize"
+version = "0.2.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "xlib"
 version = "0.1.0"
-source = "git+https://github.com/servo/rust-xlib.git#e81fd3f7c903cf3b2245a9aff659603700312208"
+source = "git+https://github.com/servo/rust-xlib.git#7558b1b41304292955b3c081dba23d291458fde9"
+dependencies = [
+ "bitflags 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 

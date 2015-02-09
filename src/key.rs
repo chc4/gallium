@@ -1,9 +1,9 @@
 use std::fmt::{Show,Formatter,Result};
+use std::str::from_utf8;
 use xlib::{KeyCode,KeySym};
 use xserver::{XServer,keysym_to_string};
 
 pub bitflags! {
-    #[deriving(Copy)]
     #[allow(non_upper_case_globals)] 
     flags KeyMod: u32 {
         const SHIFT = 0b00000001,
@@ -17,13 +17,13 @@ pub bitflags! {
     }
 }
 
-#[deriving(PartialEq,Eq,Clone,Copy)]
+#[derive(PartialEq,Eq,Clone,Copy)]
 pub struct Key {
     pub code: KeyCode,
     pub sym: KeySym,
     pub modifier: KeyMod,
 }
-const LOOKUP: [&'static str,..8] = ["S-","Lock-","C-","M-","M2-","M3-","M4-","M5-"];
+const LOOKUP: [&'static str; 8] = ["S-","Lock-","C-","M-","M2-","M3-","M4-","M5-"];
 impl Show for Key {
     fn fmt(&self, f: &mut Formatter) -> Result {
         let mut pref = "".to_string();
@@ -33,7 +33,8 @@ impl Show for Key {
             }
         }
         let cs = keysym_to_string(self.sym);
-        let x = cs.as_str().unwrap();
+        
+        let x = from_utf8(cs.as_bytes()).unwrap();
         write!(f,"{}{}",pref,x)
     }
 }
@@ -56,7 +57,7 @@ impl Key {
     pub fn create(s: String, serv: &XServer) -> Key {
         let mut flag = 0u32;
         let mut key = "";
-        for m in s.split('-') {
+        for mut m in s.split('-') {
             let mut full = m.to_string();
             full.push_str("-");
             match LOOKUP.position_elem(&full.as_slice()) {
@@ -68,7 +69,7 @@ impl Key {
                 }
             }
         }
-        let sym = serv.string_to_keysym(&key.to_string());
+        let mut sym = serv.string_to_keysym(&mut key.to_string());
         let code = serv.keysym_to_keycode(sym);
 
         let flag = match KeyMod::from_bits(flag){

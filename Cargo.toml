@@ -7,5 +7,8 @@ authors = ["Charlie Cummings <chc4000@gmail.com>"]
 [dependencies.xlib]
 git = "https://github.com/servo/rust-xlib.git"
 
+[dependencies.rustc-serialize]
+rustc-serialize = "0.2.8"
+
 [[bin]]
 name = "gallium"

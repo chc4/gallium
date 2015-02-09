@@ -1,14 +1,14 @@
-extern crate serialize;
 extern crate xlib;
 use std::os::homedir;
-use std::sync::RWLock;
-use serialize::{Encodable,Decodable,json, Encoder,Decoder};
-use std::io::{File,Open,Truncate,ReadWrite,Reader};
+use std::sync::RwLock;
+use rustc_serialize::{Encodable,Decodable,json, Encoder,Decoder};
+use std::old_io::{File,Open,Truncate,ReadWrite,Reader};
 use key::Key;
 use xserver::XServer;
+use std::ffi::CString;
 // Common configuration options for the window manager.
 
-#[deriving(Clone)]
+#[derive(Clone)]
 pub struct KeyBind {
     pub binding: Option<Key>, //Can't store the Key in this
     pub chord: String
@@ -26,8 +26,8 @@ impl KeyBind{
     }
 }
 //When decoding JSON to Config, we need to have the JSON hold *only* the chord
-impl<E, D:Decoder<E>> Decodable<D,E> for KeyBind {
-    fn decode(d: &mut D) -> Result<KeyBind,E> {
+impl Decodable for KeyBind {
+    fn decode<D: Decoder>(d: &mut D) -> Result<KeyBind,D::Error> {
         let k = KeyBind {
             binding: None,
             chord: try!(d.read_str())
@@ -36,12 +36,12 @@ impl<E, D:Decoder<E>> Decodable<D,E> for KeyBind {
     }
 }
 //Manually implement KeyBind serialization so it saves it in key chord format
-impl<E, S:Encoder<E>> Encodable<S,E> for KeyBind {
-    fn encode(&self, s: &mut S) -> Result<(),E> {
+impl Encodable for KeyBind {
+    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(),S::Error> {
         s.emit_str(self.chord.as_slice())
     }
 }
-#[deriving(Encodable,Decodable,Clone)]
+#[derive(RustcEncodable,RustcDecodable,Clone)]
 pub struct Config {
     /// Whether focus follows mouse movements or
     /// only click events and keyboard movements.
@@ -77,18 +77,18 @@ pub struct Config {
     pub workspace_right: KeyBind
 }
 pub struct ConfigLock {
-    conf: RWLock<Config>
+    conf: RwLock<Config>
 }
 
 impl ConfigLock {
     pub fn current(&self) -> Config {
-        self.conf.read().deref().clone()
+        self.conf.read().unwrap().clone()
     }
     pub fn update(&mut self,new_conf: Config){
-        self.conf = RWLock::new(new_conf);
+        self.conf = RwLock::new(new_conf);
     }
     pub fn setup(&mut self,serv: &mut XServer){
-        self.conf.write().setup(serv);
+        self.conf.write().unwrap().setup(serv);
     }
 }
 
@@ -111,7 +111,7 @@ impl Config {
                     border_width:        2,
                     spacing:             10,
                     terminal:            (String::from_str("xterm"), String::from_str("-fg White -bg Black")),
-                    logfile:             format!("{}/.wtftw.log", homedir().unwrap().to_c_str()),
+                    logfile:             format!("{}/.wtftw.log", homedir().unwrap().as_str().unwrap()),
                     tags:                vec!(
                                             String::from_str("1: term"),
                                             String::from_str("2: web"),
@@ -126,7 +126,7 @@ impl Config {
                     workspace_left: KeyBind::create("M4-Left".to_string()),
                     workspace_right: KeyBind::create("M4-Right".to_string())
         };
-        let path = Path::new(format!("{}/.wtftwrc", homedir().unwrap().to_c_str()));
+        let path = Path::new(CString::from_slice(format!("{}/.wtftwrc", homedir().unwrap().as_str().unwrap()).as_bytes()));
         let mut conf_file = File::open_mode(&path,Open,ReadWrite).unwrap();
         let dec_conf = match json::decode(conf_file.read_to_string().unwrap().as_slice()) {
             Ok(v) => v,
@@ -135,7 +135,7 @@ impl Config {
                         //Let's just roll back to the default
                         //conf_file.truncate(0);
                         let mut conf_file = File::open_mode(&path,Truncate,ReadWrite).unwrap();
-                        conf_file.write_str(json::encode::<Config>(&conf).as_slice());
+                        conf_file.write_str(json::encode::<Config>(&conf).unwrap().as_slice());
                         conf_file.fsync();
                         conf
                      }
@@ -162,7 +162,7 @@ impl Config {
     //Wrap a config in a RWLock
     pub fn new() -> ConfigLock {
         ConfigLock {
-            conf: RWLock::new(Config::initialize())
+            conf: RwLock::new(Config::initialize())
         }
     }
 }

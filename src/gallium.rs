@@ -1,8 +1,8 @@
-#![feature(globs,phase)]
+#[macro_use] extern crate log;
+extern crate "rustc-serialize" as rustc_serialize;
+#[macro_use] extern crate rustc_bitflags;
 extern crate serialize;
 extern crate xlib;
-#[phase(plugin,link)]
-extern crate log;
 use config::{Config,ConfigLock};
 use window_manager::WindowManager;
 use xserver::{XServer,ServerEvent};
@@ -39,9 +39,9 @@ impl<'a> Gallium<'a> {
             match self.window_server.get_event() {
                 ServerEvent::CreateNotify(window, (x,y)) => {
                     //For now just adding to the current workspace
-                    self.window_manager.workspace().windows.push(window);
+                    self.window_manager.workspaces.current().unwrap().windows.push(window);
                     self.window_server.map(window);
-                    self.window_manager.workspace().refresh();
+                    self.window_manager.workspaces.current().unwrap().refresh();
                 },
                 _ => {
                     println!("Fetched event");
