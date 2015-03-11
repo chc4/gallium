@@ -112,7 +112,7 @@ impl Config {
                                             "2: web".to_string(),
                                             "3: code".to_string(),
                                             "4: media".to_string()),
-                    kontrol: KeyBind::create("M2-A".to_string()), //Needs -A so I can parse easily
+                    kontrol: KeyBind::create("M2-".to_string()),
                     launcher: "dmenu".to_string(),
                     launch_key: KeyBind::create("K-S-p".to_string()), //Stop. Before you say something about using a char instead, Json::decode fails for them
                     reload_key: KeyBind::create("K-p".to_string()),
