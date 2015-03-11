@@ -1,19 +1,20 @@
-use std::fmt::{Show,Formatter,Result};
+use std::fmt::{Debug,Formatter,Result};
 use std::str::from_utf8;
 use xlib::{KeyCode,KeySym};
 use xserver::{XServer,keysym_to_string};
 
-pub bitflags! {
+bitflags! {
     #[allow(non_upper_case_globals)] 
     flags KeyMod: u32 {
-        const SHIFT = 0b00000001,
-        const LOCK = 0b00000010,
-        const CONTROL = 0b00000100,
-        const MOD1 = 0b00001000,
-        const MOD2 = 0b00010000,
-        const MOD3 = 0b00100000,
-        const MOD4 = 0b01000000,
-        const MOD5 = 0b10000000,
+        const SHIFT   = 0b000000001,
+        const LOCK    = 0b000000010,
+        const CONTROL = 0b000000100,
+        const MOD1    = 0b000001000,
+        const MOD2    = 0b000010000,
+        const MOD3    = 0b000100000,
+        const MOD4    = 0b001000000,
+        const MOD5    = 0b010000000,
+        const KOMMAND = 0b100000000,
     }
 }
 
@@ -23,8 +24,8 @@ pub struct Key {
     pub sym: KeySym,
     pub modifier: KeyMod,
 }
-const LOOKUP: [&'static str; 8] = ["S-","Lock-","C-","M-","M2-","M3-","M4-","M5-"];
-impl Show for Key {
+const LOOKUP: [&'static str; 9] = ["S-","Lock-","C-","M-","M2-","M3-","M4-","M5-","K-"];
+impl Debug for Key {
     fn fmt(&self, f: &mut Formatter) -> Result {
         let mut pref = "".to_string();
         for b in range(0,8){

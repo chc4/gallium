@@ -21,8 +21,8 @@ impl KeyBind{
             chord: s
         }
     }
-    pub fn unwrap(self) -> Key {
-        self.binding.unwrap()
+    pub fn unwrap(&self) -> &Key {
+        self.binding.as_ref().unwrap()
     }
 }
 //When decoding JSON to Config, we need to have the JSON hold *only* the chord
@@ -38,7 +38,7 @@ impl Decodable for KeyBind {
 //Manually implement KeyBind serialization so it saves it in key chord format
 impl Encodable for KeyBind {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(),S::Error> {
-        s.emit_str(self.chord.as_slice())
+        s.emit_str(&self.chord[..])
     }
 }
 #[derive(RustcEncodable,RustcDecodable,Clone)]
@@ -56,10 +56,10 @@ pub struct Config {
     pub spacing: u32,
     /// Default terminal to start
     pub terminal: (String, String),
-    /// Path to the logfile
-    pub logfile: String,
     /// Default tags for workspaces
     pub tags: Vec<String>,
+    /// Modifier for WM keybinds
+    pub kontrol: KeyBind,
     /// Default launcher application
     pub launcher: String,
     /// Keybind for the launcher and configuration reloading
@@ -68,10 +68,6 @@ pub struct Config {
     pub reload_key: KeyBind,
     /// Keybind for launching the terminal
     pub term_key: KeyBind,
-    /// Keybind for cycling through the layout format
-    pub mode_key: KeyBind,
-    /// Modifier prefix for workspace hotkeys. Eg, M- will register M-1, M-2,...
-    pub workspace_mod: String,
     /// Hotkeys for switching left and right from the current workspace
     pub workspace_left: KeyBind,
     pub workspace_right: KeyBind
@@ -110,21 +106,19 @@ impl Config {
                     border_color:        0x00FFB6B0,
                     border_width:        2,
                     spacing:             10,
-                    terminal:            (String::from_str("xterm"), String::from_str("-fg White -bg Black")),
-                    logfile:             format!("{}/.wtftw.log", homedir().unwrap().as_str().unwrap()),
+                    terminal:            (String::from_str("urxvt"), String::from_str("")),
                     tags:                vec!(
-                                            String::from_str("1: term"),
-                                            String::from_str("2: web"),
-                                            String::from_str("3: code"),
-                                            String::from_str("4: media")),
+                                            "1: term".to_string(),
+                                            "2: web".to_string(),
+                                            "3: code".to_string(),
+                                            "4: media".to_string()),
+                    kontrol: KeyBind::create("M2-A".to_string()), //Needs -A so I can parse easily
                     launcher: "dmenu".to_string(),
-                    launch_key: KeyBind::create("M-S-p".to_string()), //Stop. Before you say something about using a char instead, Json::decode fails for them
-                    reload_key: KeyBind::create("M-p".to_string()),
-                    term_key: KeyBind::create("S-M-Return".to_string()),
-                    mode_key: KeyBind::create("M-Return".to_string()),
-                    workspace_mod: "M-".to_string(),
-                    workspace_left: KeyBind::create("M4-Left".to_string()),
-                    workspace_right: KeyBind::create("M4-Right".to_string())
+                    launch_key: KeyBind::create("K-S-p".to_string()), //Stop. Before you say something about using a char instead, Json::decode fails for them
+                    reload_key: KeyBind::create("K-p".to_string()),
+                    term_key: KeyBind::create("S-K-Return".to_string()),
+                    workspace_left: KeyBind::create("K-Left".to_string()),
+                    workspace_right: KeyBind::create("K-Right".to_string())
         };
         let path = Path::new(CString::from_slice(format!("{}/.wtftwrc", homedir().unwrap().as_str().unwrap()).as_bytes()));
         let mut conf_file = File::open_mode(&path,Open,ReadWrite).unwrap();
@@ -144,20 +138,28 @@ impl Config {
     }
     pub fn setup(&mut self, serv: &mut XServer){
         serv.clear_keys();
+        //Instance Kontrol to a valid Key
+        let mut kchord = self.kontrol.chord.clone();
+        kchord.push_str("A"); //Make it a parsable KeyBind
+        self.kontrol.binding = Some(Key::create(kchord,serv));
         //Register the workspace hotkeys
         let numkey = ["1","2","3","4","5","6","7","8","9","0"];
-        for i in range(0,numkey.len()){
-            let mut mo = self.workspace_mod.clone();
-            mo.push_str(numkey[i]);
-            let k = Key::create(mo,serv);
+        for num in numkey.iter() {
+            let mut k = Key::create(num.to_string(),serv);
+            k.modifier = k.modifier | self.kontrol.unwrap().modifier;
             serv.add_key(k);
         }
-        serv.parse_key(&mut self.launch_key);
-        serv.parse_key(&mut self.reload_key);
-        serv.parse_key(&mut self.term_key);
-        serv.parse_key(&mut self.mode_key);
-        serv.parse_key(&mut self.workspace_left);
-        serv.parse_key(&mut self.workspace_right);
+        let mut parse = vec!(
+            &mut self.launch_key,
+            &mut self.reload_key,
+            &mut self.term_key,
+            &mut self.workspace_left,
+            &mut self.workspace_right);
+        for k in parse.iter_mut() {
+            let p = Key::create(k.chord.clone(),serv);
+            k.binding = Some(p);
+            serv.add_key(p);
+        }
    }
     //Wrap a config in a RWLock
     pub fn new() -> ConfigLock {

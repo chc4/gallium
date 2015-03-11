@@ -1,3 +1,4 @@
+#![feature(rustc_private,os)]
 #[macro_use] extern crate log;
 extern crate "rustc-serialize" as rustc_serialize;
 #[macro_use] extern crate rustc_bitflags;
@@ -43,6 +44,9 @@ impl<'a> Gallium<'a> {
                     self.window_server.map(window);
                     self.window_manager.workspaces.current().unwrap().refresh();
                 },
+                ServerEvent::KeyPress(key) => {
+                    println!("Key press:{:?}",key);
+                }
                 _ => {
                     println!("Fetched event");
                 }

@@ -83,7 +83,7 @@ impl<'a> Workspace<'a>{
     }
 }
 
-pub struct Monitor<'a> {
+pub struct Monitor {
     //Always one display, but mutable workspace + layout bound to it
     screen: Screen,
     pub workspace: u32,
@@ -93,7 +93,7 @@ pub struct Monitor<'a> {
 //I blame the person on IRC who told me to use copy_lifetime.
 //Because you can't. That's Completely Illegal(tm).
 pub struct WindowManager<'a> {
-    screens: Vec<Monitor<'a>>,
+    screens: Vec<Monitor>,
     curr_screen: u32,
     pub workspaces: Deck<Workspace<'a>> //Vec<Workspace>? List of all workspaces so we can increment each Screen
 }

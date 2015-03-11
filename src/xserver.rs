@@ -1,4 +1,5 @@
 extern crate libc;
+use std::old_path::BytesContainer;
 use self::libc::funcs::c95::stdlib::malloc;
 pub use xlib::*;
 pub use key::{
@@ -104,9 +105,9 @@ pub enum ServerEvent {
 
 pub fn keysym_to_string(sym: KeySym) -> CString {
     unsafe {
-        let s: *const i8 = &*XKeysymToString(sym);
+        let s: *const i8 = XKeysymToString(sym);
         //I don't know enough about Rust FFI to know if this will memory leak, but I fear it will
-        //CString::from_slice(&*(s as *const u8))
+        //CString::from_slice(&*(s as *const [u8]))
         CString::from_slice(c_str_to_bytes(&s))
     }
 }
@@ -130,7 +131,7 @@ impl XServer {
         XServer {
             display: disp,
             root: root,
-            event: malloc(256),//unsafe { *malloc(size_of::<XEvent>() as *const XEvent) }, //Stolen from wtftw(ish)
+            event: malloc(256) as *mut XEvent,//unsafe { *malloc(size_of::<XEvent>() as *const XEvent) }, //Stolen from wtftw(ish)
             keys: Vec::new()
         }
     }
@@ -168,7 +169,6 @@ impl XServer {
             },
             KeyPress => unsafe {
                 let ev = self.get_event_as::<XKeyPressedEvent>();
-                println!("Key pressed {}",ev.keycode);
                 //let m = KeyMod::from_bits(ev.state).unwrap_or(KeyMod::empty());
                 //ServerEvent::KeyPress(ev.keycode,m)
                 let k = Key::parse(ev.keycode as KeyCode,ev.state,self);
@@ -207,20 +207,6 @@ impl XServer {
         self.keys.clear();
         unsafe {
             XUngrabKey(self.display, 0 /*AnyKey*/, (1<<15) /*AnyModifier*/, self.root);
-        }
-    }
-
-    //There isn't a very good place for this.
-    //It was in config, but it would be magically affecting the keys Vec<T>
-    pub fn parse_key(&mut self, k: &mut KeyBind) -> Key {
-        if k.binding.is_none() {
-            let bind = Key::create(k.chord.clone(),self);
-            k.binding = Some(bind);
-            self.add_key(bind);
-            bind 
-        }
-        else {
-            k.binding.unwrap()
         }
     }
 
