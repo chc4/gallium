@@ -57,6 +57,12 @@ impl<'a> Gallium<'a> {
 
 fn main(){
     let gl = Gallium::setup();
+    for argument in std::os::args().iter() {
+        println!("{}", argument);
+        if argument[..].eq("--revert") {
+            Config::reset(&mut gl.config.current())
+        }
+    }
     debug!("Gallium has been setup.");
     gl.start();
 }

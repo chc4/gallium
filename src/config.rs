@@ -95,43 +95,40 @@ at that point in time)
 You can also do config.update(new_config) on a keybind, so everything
 is super hotswappable and happy. Yaay.
 */
+fn default() -> Config {
+    Config {
+        focus_follows_mouse: true,
+        focus_border_color:  0x00B6FFB0,
+        border_color:        0x00FFB6B0,
+        border_width:        2,
+        spacing:             10,
+        terminal:            (String::from_str("urxvt"), String::from_str("")),
+        tags:                vec!(
+            "1: term".to_string(),
+            "2: web".to_string(),
+            "3: code".to_string(),
+            "4: media".to_string()),
+        kontrol: KeyBind::create("M2-".to_string()),
+        launcher: "dmenu".to_string(),
+        launch_key: KeyBind::create("K-S-p".to_string()),
+        reload_key: KeyBind::create("K-p".to_string()),
+        term_key: KeyBind::create("S-K-Return".to_string()),
+        workspace_left: KeyBind::create("K-Left".to_string()),
+        workspace_right: KeyBind::create("K-Right".to_string())
+    }
+}
 
 impl Config {
     /// Create the Config from a json file
     pub fn initialize() -> Config {
-        //Default version of the config, for fallback
-        let conf = Config {
-                    focus_follows_mouse: true,
-                    focus_border_color:  0x00B6FFB0,
-                    border_color:        0x00FFB6B0,
-                    border_width:        2,
-                    spacing:             10,
-                    terminal:            (String::from_str("urxvt"), String::from_str("")),
-                    tags:                vec!(
-                                            "1: term".to_string(),
-                                            "2: web".to_string(),
-                                            "3: code".to_string(),
-                                            "4: media".to_string()),
-                    kontrol: KeyBind::create("M2-".to_string()),
-                    launcher: "dmenu".to_string(),
-                    launch_key: KeyBind::create("K-S-p".to_string()), //Stop. Before you say something about using a char instead, Json::decode fails for them
-                    reload_key: KeyBind::create("K-p".to_string()),
-                    term_key: KeyBind::create("S-K-Return".to_string()),
-                    workspace_left: KeyBind::create("K-Left".to_string()),
-                    workspace_right: KeyBind::create("K-Right".to_string())
-        };
-        let path = Path::new(CString::from_slice(format!("{}/.wtftwrc", homedir().unwrap().as_str().unwrap()).as_bytes()));
+        let path = Path::new(CString::from_slice(format!("{}/.galliumrc", homedir().unwrap().as_str().unwrap()).as_bytes()));
         let mut conf_file = File::open_mode(&path,Open,ReadWrite).unwrap();
         let dec_conf = match json::decode(conf_file.read_to_string().unwrap().as_slice()) {
             Ok(v) => v,
-            Err(_) =>{
+            Err(e) =>{
                         println!("Our config is corrupted!");
-                        //Let's just roll back to the default
-                        //conf_file.truncate(0);
-                        let mut conf_file = File::open_mode(&path,Truncate,ReadWrite).unwrap();
-                        conf_file.write_str(json::encode::<Config>(&conf).unwrap().as_slice());
-                        conf_file.fsync();
-                        conf
+                        println!("Error: {:?}",e);
+                        default()
                      }
         };
         dec_conf
@@ -160,7 +157,17 @@ impl Config {
             k.binding = Some(p);
             serv.add_key(p);
         }
-   }
+    }
+
+    pub fn reset(&mut self){
+        //Let's just roll back to the default
+        //conf_file.truncate(0);
+        let path = Path::new(CString::from_slice(format!("{}/.galliumrc", homedir().unwrap().as_str().unwrap()).as_bytes()));
+        let mut conf_file = File::open_mode(&path,Truncate,ReadWrite).unwrap();
+        conf_file.write_str(json::encode::<Config>(&default()).unwrap().as_slice());
+        conf_file.fsync();
+    }
+
     //Wrap a config in a RWLock
     pub fn new() -> ConfigLock {
         ConfigLock {
