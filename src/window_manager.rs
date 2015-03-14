@@ -50,13 +50,13 @@ impl<T> Deck<T>{
         }
         Some(r.unwrap())
     }
-    fn swap(&mut self,pos1: u32,pos2: u32){
+    pub fn swap(&mut self,pos1: u32,pos2: u32){
         self.cards.swap(pos1 as usize,pos2 as usize);
     }
     //This is O(n) and re-allocates everything right of the index. It's bad.
-    fn remove(&mut self,ind: u32) -> Option<T> {
+    pub fn remove(&mut self,ind: u32) -> Option<T> {
         let k = self.cards.remove(ind as usize);
-        if self.current.unwrap() >= ind as usize {
+        if self.current.is_some() && self.current.unwrap() >= ind as usize {
             self.current = None
         }
         Some(k)
@@ -77,7 +77,7 @@ pub struct Workspace<'a> {
     master: Option<&'a Window>
 }
 impl<'a> Workspace<'a>{
-    pub fn refresh(&mut self, xserv: &mut XServer, screen: u16, mut config: Config){
+    pub fn refresh(&mut self, xserv: &mut XServer, screen: u32, mut config: Config){
         //Will re-apply the layout to the windows, but not implemented yet
         println!("Refresh");
         self.layout.apply(xserv, screen, &mut self.windows, &mut config);
@@ -89,7 +89,7 @@ pub struct Window {
     pub x: isize,
     pub y: isize,
     pub z: isize,
-    pub size: (isize,isize)
+    pub size: (usize,usize)
 }
 
 pub struct Monitor {
@@ -118,7 +118,7 @@ impl<'a> WindowManager<'a> {
         }*/
         let wind_deck = Deck::new();
         let lay = TallLayout {
-            splits: 1,
+            columns: 2,
             master: Vec::new()
         };
         let work = Workspace {

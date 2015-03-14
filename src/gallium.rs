@@ -8,6 +8,7 @@ use config::{Config,ConfigLock};
 use window_manager::WindowManager;
 use xserver::{XServer,ServerEvent};
 use key::Key;
+use std::process::Command;
 
 pub mod config;
 pub mod window_manager;
@@ -39,18 +40,44 @@ impl<'a> Gallium<'a> {
         loop {
             debug!("Polling event...");
             match self.window_server.get_event() {
-                ServerEvent::MapRequest(window) => {
+                ServerEvent::MapRequest(mut window) => {
                     //For now just adding to the current workspace
                     let mut w = self.window_manager.workspaces.current().unwrap();
+                    let screen = self.window_manager.screens.current.unwrap() as u32; //index, not ptr
                     let p = window.wind_ptr;
+                    w.layout.add(&mut window);
                     w.windows.push(window);
                     self.window_server.map(p);
-                    w.refresh(&mut self.window_server, self.window_manager.screens.current.unwrap() as u16, self.config.current());
+                    w.refresh(&mut self.window_server, screen, self.config.current());
                 },
                 ServerEvent::KeyPress(key) => {
                     println!("Key press:{:?}",key);
                     if key == *self.config.current().term_key.unwrap() {
                         println!("Should probably spawn a terminal right here");
+                        let (term,args) = self.config.current().terminal.clone();
+                        let (term,args) = (term.as_slice(),args.as_slice());
+                        let mut c = Command::new(term);
+                        if args.len()>0 {
+                            let co = c.arg(args);
+                            co.spawn();
+                        }
+                        else {
+                            c.spawn();
+                        }
+                    }
+                },
+                ServerEvent::DestroyNotify(wind_ptr) => {
+                    let screen = self.window_manager.screens.current.unwrap() as u32;
+                    for mut work in &mut self.window_manager.workspaces.cards[..] {
+                        for wind_ind in range(0,work.windows.cards.len()) {
+                            if work.windows.cards[wind_ind].wind_ptr == wind_ptr {
+                                println!("Window {} removed from Workspace",wind_ind);
+                                work.layout.remove(wind_ind as u32);
+                                work.windows.remove(wind_ind as u32);
+                                work.refresh(&mut self.window_server, screen, self.config.current());
+                                break;
+                            }
+                        }
                     }
                 }
                 _ => {

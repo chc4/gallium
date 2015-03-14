@@ -160,6 +160,7 @@ impl Config {
             k.binding = Some(p);
             serv.add_key(p);
         }
+        serv.grab_keys();
     }
 
     pub fn reset(&mut self){

@@ -4,8 +4,12 @@ use window_manager::{Deck,Workspace,Window};
 use config::Config;
 
 pub trait Layout {
-    fn apply(&self, &mut XServer, screen: u16, &mut Deck<Window>, &mut Config);
+    fn apply(&self, &mut XServer, screen: u32, &mut Deck<Window>, &mut Config);
     fn resize(&mut self, Resize);
+    fn add(&mut self, &mut Window);
+    fn remove(&mut self, u32);
+    fn add_master(&mut self, u32);
+    fn remove_master(&mut self, u32);
 }
 
 #[derive(Copy,PartialEq)]
@@ -25,39 +29,69 @@ pub enum Resize {
 }
 
 pub struct TallLayout {
-    pub splits: u16, //How many columns there are
+    pub columns: u16, //How many columns there are
     pub master: Vec<u32>
 }
 
 impl Layout for TallLayout {
-    fn apply(&self, xserv: &mut XServer, screen: u16, windows: &mut Deck<Window>, config: &mut Config){
+    fn apply(&self, xserv: &mut XServer, screen: u32, windows: &mut Deck<Window>, config: &mut Config){
         let mut wind = &mut windows.cards[..];
-        let (x,y) = (xserv.width(screen as u32),xserv.height(screen as u32));
+        let (x,y) = (xserv.width(screen as u32) as usize,xserv.height(screen as u32) as usize);
 
-        let col = if self.splits as usize >= wind.len() {
-            (wind.len()) as u32
+        let mut col = if self.columns as usize >= wind.len() {
+            (wind.len()) as usize
         } else {
-            self.splits as u32
+            self.columns as usize 
         };
+        if col == 0 {
+            col = 1
+        }
         println!("Col: {}",col);
-        for c in range(0,col) {
-            println!("Applying layout to window {}",c);
-            let ref mut w = wind[c as usize];
+        let mcol = (col-1); //I use this a lot
+        for c in range(0,mcol) {
+            println!("Applying layout to window {} (master)",c);
+            let ref mut w = wind[c];
             w.x = ((x/col)*c) as isize;
-            w.y = y as isize;
-            w.size = ((x/col) as isize,y as isize);
+            w.y = 0;
+            w.size = ((x/col) as usize,y as usize);
             xserv.refresh(w);
+        }
+        if wind.len()-mcol as usize > 0 {
+            let stack = wind.len()-mcol as usize;
+            for r in range(mcol,wind.len()) {
+                println!("Appling layout to window {}",r);
+                let ref mut w = wind[r as usize];
+                w.x = ((x/col)*mcol) as isize;
+                w.y = ((y/(stack))*(r-mcol)) as isize;
+                w.size = ((x/col) as usize,(y/stack) as usize);
+                xserv.refresh(w);
+            }
         }
     }
     
+    fn add_master(&mut self, ind: u32){
+        
+    }
+    
+    fn remove_master(&mut self, ind: u32){
+    
+    }
+
+    fn add(&mut self, wind: &mut Window){
+        println!("Added a new window, yaaay");
+    }
+    fn remove(&mut self, ind: u32){
+        println!("Removed window {}, oh nooo",ind);
+    }
+
     fn resize(&mut self, message: Resize){
         // lol ignore horz it's tall layout remember
         match message {
             Resize::Shrink_Horz => {
-                self.splits-=1;
+                self.columns-=1;
             },
             Resize::Grow_Horz => {
-                self.splits+=1;
+                self.columns+=1;
             },
             _ => ()
         }

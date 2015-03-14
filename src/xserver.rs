@@ -104,6 +104,7 @@ pub enum ServerEvent {
     ButtonPress((i32,i32)),
     KeyPress(Key),
     MapRequest(GWindow),
+    DestroyNotify(Window),
     Unknown
 }
 
@@ -130,7 +131,8 @@ impl XServer {
         }
         debug!("XServer display: {:?}",disp);
         let root = XRootWindow(disp, screen_num);
-        XSelectInput(disp,root,SubstructureNotifyMask|SubstructureRedirectMask|PropertyChangeMask|KeyPressMask | KeyReleaseMask | ButtonPressMask);
+        //XSelectInput(disp,root,SubstructureNotifyMask|SubstructureRedirectMask|PropertyChangeMask|KeyPressMask | KeyReleaseMask | ButtonPressMask);
+        XSelectInput(disp,root,SubstructureNotifyMask|SubstructureRedirectMask);
         XSync(disp,1);
         XServer {
             display: disp,
@@ -150,7 +152,7 @@ impl XServer {
 
     pub fn map(&mut self,wind: Window){
         unsafe {
-            //XMapWindow(self.display,wind);
+            XMapWindow(self.display,wind);
         }
     }
 
@@ -204,6 +206,11 @@ impl XServer {
                    size: (0,0)
                 };
                 ServerEvent::MapRequest(w)
+            },
+            DestroyNotify => unsafe {
+                let ev = self.get_event_as::<XDestroyWindowEvent>();
+                println!("Window destroyed {}",ev.window);
+                ServerEvent::DestroyNotify(ev.window)
             },
             _ => ServerEvent::Unknown
         }
