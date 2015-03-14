@@ -41,15 +41,11 @@ impl<'a> Gallium<'a> {
             match self.window_server.get_event() {
                 ServerEvent::MapRequest(window) => {
                     //For now just adding to the current workspace
-                    let w = self.window_manager.workspaces.current().unwrap();
-                    let Gallium { 
-                        window_server: ref mut xserv, 
-                        window_manager: ref mut window_manager, 
-                        config: ref mut config } = self;
+                    let mut w = self.window_manager.workspaces.current().unwrap();
                     let p = window.wind_ptr;
-                    window_manager.workspaces.current().unwrap().windows.push(window);
-                    xserv.map(p);
-                    w.layout.apply(xserv,window_manager,&mut config.current());
+                    w.windows.push(window);
+                    self.window_server.map(p);
+                    w.refresh(&mut self.window_server, self.window_manager.screens.current.unwrap() as u16, self.config.current());
                 },
                 ServerEvent::KeyPress(key) => {
                     println!("Key press:{:?}",key);

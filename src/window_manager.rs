@@ -76,13 +76,13 @@ pub struct Workspace<'a> {
     pub layout: Box<Layout>,
     master: Option<&'a Window>
 }
-//impl<'a> Workspace<'a>{
-    //pub fn refresh(&mut self, gall: &'a mut Gallium){
+impl<'a> Workspace<'a>{
+    pub fn refresh(&mut self, xserv: &mut XServer, screen: u16, mut config: Config){
         //Will re-apply the layout to the windows, but not implemented yet
-      //  println!("Refresh");
-       // self.layout.apply(&mut gall);
-    //}
-//}
+        println!("Refresh");
+        self.layout.apply(xserv, screen, &mut self.windows, &mut config);
+    }
+}
 
 pub struct Window {
     pub wind_ptr: XWindow,

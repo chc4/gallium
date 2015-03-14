@@ -1,10 +1,10 @@
-use xserver::{XServer,Window};
+use xserver::{XServer};
 use super::Gallium;
-use window_manager::WindowManager;
+use window_manager::{Deck,Workspace,Window};
 use config::Config;
 
 pub trait Layout {
-    fn apply(&mut self, &mut XServer, &mut WindowManager, &mut Config);
+    fn apply(&self, &mut XServer, screen: u16, &mut Deck<Window>, &mut Config);
     fn resize(&mut self, Resize);
 }
 
@@ -30,9 +30,8 @@ pub struct TallLayout {
 }
 
 impl Layout for TallLayout {
-    fn apply(&mut self, xserv: &mut XServer, window_manager: &mut WindowManager, config: &mut Config){
-        let mut wind = &mut window_manager.workspaces.current().unwrap().windows.cards[..];
-        let screen = window_manager.screens.current.unwrap();
+    fn apply(&self, xserv: &mut XServer, screen: u16, windows: &mut Deck<Window>, config: &mut Config){
+        let mut wind = &mut windows.cards[..];
         let (x,y) = (xserv.width(screen as u32),xserv.height(screen as u32));
 
         let col = if self.splits as usize >= wind.len() {
@@ -40,6 +39,7 @@ impl Layout for TallLayout {
         } else {
             self.splits as u32
         };
+        println!("Col: {}",col);
         for c in range(0,col) {
             println!("Applying layout to window {}",c);
             let ref mut w = wind[c as usize];
