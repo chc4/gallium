@@ -15,7 +15,7 @@ pub mod key;
 pub mod xserver;
 pub mod layout;
 
-struct Gallium<'a> {
+pub struct Gallium<'a> {
     config: ConfigLock,
     window_manager: WindowManager<'a>,
     window_server: XServer
@@ -39,11 +39,17 @@ impl<'a> Gallium<'a> {
         loop {
             debug!("Polling event...");
             match self.window_server.get_event() {
-                ServerEvent::MapRequest(window, (x,y)) => {
+                ServerEvent::MapRequest(window) => {
                     //For now just adding to the current workspace
-                    self.window_manager.workspaces.current().unwrap().windows.push(window);
-                    self.window_server.map(window);
-                    self.window_manager.workspaces.current().unwrap().refresh();
+                    let w = self.window_manager.workspaces.current().unwrap();
+                    let Gallium { 
+                        window_server: ref mut xserv, 
+                        window_manager: ref mut window_manager, 
+                        config: ref mut config } = self;
+                    let p = window.wind_ptr;
+                    window_manager.workspaces.current().unwrap().windows.push(window);
+                    xserv.map(p);
+                    w.layout.apply(xserv,window_manager,&mut config.current());
                 },
                 ServerEvent::KeyPress(key) => {
                     println!("Key press:{:?}",key);

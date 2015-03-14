@@ -1,5 +1,6 @@
-use xserver::{XServer,Window,Display,Screen,XDefaultScreenOfDisplay};
-use layout::{Layouts};
+use super::Gallium;
+use xserver::{XServer,XWindow,Display,Screen,XDefaultScreenOfDisplay};
+use layout::{Layout,Layouts,TallLayout};
 use config::{Config,ConfigLock};
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -11,11 +12,11 @@ use std::ptr;
 //Selecting a new current will move that card to the top of the deck
 #[derive(PartialEq)]
 pub struct Deck<T>{
-    cards: Vec<T>, //If you get weird mutability errors, RefCell<T>
-    current: Option<usize> 
+    pub cards: Vec<T>, //If you get weird mutability errors, RefCell<T>
+    pub current: Option<usize> 
 }
 
-impl<T: PartialEq> Deck<T>{
+impl<T> Deck<T>{
     fn new() -> Deck<T>{
         Deck {
             cards: Vec::new(),
@@ -53,16 +54,16 @@ impl<T: PartialEq> Deck<T>{
         self.cards.swap(pos1 as usize,pos2 as usize);
     }
     //This is O(n) and re-allocates everything right of the index. It's bad.
-    fn remove(&mut self,card: &T) -> Option<T> {
-        let ind = self.cards.as_slice().position_elem(card);
-        if ind.is_none() {
-            return None
-        }
-        let k = self.cards.remove(ind.unwrap());
-        if self.current.unwrap() >= ind.unwrap() {
+    fn remove(&mut self,ind: u32) -> Option<T> {
+        let k = self.cards.remove(ind as usize);
+        if self.current.unwrap() >= ind as usize {
             self.current = None
         }
         Some(k)
+    }
+
+    fn slice(&mut self) -> &[T] {
+        self.cards.as_slice()
     }
 }
 //WorkspaceManager is ~indirection~
@@ -70,17 +71,25 @@ impl<T: PartialEq> Deck<T>{
 //    -> many Displays
 //        -> Workspaces mapped to Displays
 //            -> Windows mapped to Workspaces
-#[derive(PartialEq)]
 pub struct Workspace<'a> {
     pub windows: Deck<Window>, //Is treated as a stack of the most recent windows
-    pub layout: Layouts,
+    pub layout: Box<Layout>,
     master: Option<&'a Window>
 }
-impl<'a> Workspace<'a>{
-    pub fn refresh(&mut self){
+//impl<'a> Workspace<'a>{
+    //pub fn refresh(&mut self, gall: &'a mut Gallium){
         //Will re-apply the layout to the windows, but not implemented yet
-        println!("Refresh");
-    }
+      //  println!("Refresh");
+       // self.layout.apply(&mut gall);
+    //}
+//}
+
+pub struct Window {
+    pub wind_ptr: XWindow,
+    pub x: isize,
+    pub y: isize,
+    pub z: isize,
+    pub size: (isize,isize)
 }
 
 pub struct Monitor {
@@ -89,12 +98,8 @@ pub struct Monitor {
     pub workspace: u32,
 }
 
-//This is now magically index-based because jesus christ
-//I blame the person on IRC who told me to use copy_lifetime.
-//Because you can't. That's Completely Illegal(tm).
 pub struct WindowManager<'a> {
-    screens: Vec<Monitor>,
-    curr_screen: u32,
+    pub screens: Deck<Monitor>,
     pub workspaces: Deck<Workspace<'a>> //Vec<Workspace>? List of all workspaces so we can increment each Screen
 }
 
@@ -104,7 +109,7 @@ impl<'a> WindowManager<'a> {
         //Preferably without having to recreate the Screen class to use it
         //let xine_enabled = unsafe { XineramaQueryExtension(serv.display) };
         //let num_screens = 1;
-        let mut screens = Vec::new();
+        let mut screens = Deck::new();
         let mut works = Deck::new();
         /*if xine_enabled {
             debug!("Xinerama is enabled!");
@@ -112,9 +117,13 @@ impl<'a> WindowManager<'a> {
             XFree(screens_);
         }*/
         let wind_deck = Deck::new();
+        let lay = TallLayout {
+            splits: 1,
+            master: Vec::new()
+        };
         let work = Workspace {
             windows: wind_deck,
-            layout: Layouts::Tall,
+            layout: Box::new(lay),
             master: None
         };
         works.push(work);
@@ -125,7 +134,6 @@ impl<'a> WindowManager<'a> {
         screens.push(scr);
         WindowManager {
             screens: screens,
-            curr_screen: 0,
             workspaces: works
         }
     }

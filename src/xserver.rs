@@ -3,6 +3,8 @@ use std::cell::RefCell;
 use std::old_path::BytesContainer;
 use self::libc::funcs::c95::stdlib::malloc;
 pub use xlib::*;
+use window_manager::Window as GWindow;
+pub use xlib::Window as XWindow;
 pub use key::{
     Key,
     KeyMod,
@@ -101,7 +103,7 @@ pub struct XServer {
 pub enum ServerEvent {
     ButtonPress((i32,i32)),
     KeyPress(Key),
-    MapRequest(Window,(i32,i32)),
+    MapRequest(GWindow),
     Unknown
 }
 
@@ -139,9 +141,23 @@ impl XServer {
         }
     }
 
+    pub fn width(&mut self, screen: u32) -> u32 {
+        unsafe { XDisplayWidth(self.display,screen as i32) as u32 } //why is this i32??
+    }
+    pub fn height(&mut self, screen: u32) -> u32 {
+        unsafe { XDisplayHeight(self.display,screen as i32) as u32 } //why is this i32??
+    }
+
     pub fn map(&mut self,wind: Window){
         unsafe {
             //XMapWindow(self.display,wind);
+        }
+    }
+
+    pub fn refresh(&mut self,gwind: &GWindow){
+        unsafe {
+            let (s_x,s_y) = gwind.size;
+            XMoveResizeWindow(self.display, gwind.wind_ptr, gwind.x as i32, gwind.y as i32, s_x as u32, s_y as u32);
         }
     }
 
@@ -178,10 +194,16 @@ impl XServer {
                 ServerEvent::KeyPress(k)
             },
             MapRequest => unsafe {
-                let ev = self.get_event_as::<XCreateWindowEvent>();
+                let ev = self.get_event_as::<XMapRequestEvent>();
                 println!("Window added {}",ev.window);
-                println!(">(X,Y) ({},{})",ev.x,ev.y);
-                ServerEvent::MapRequest(ev.window,(ev.x,ev.y))
+                let w = GWindow {
+                   wind_ptr: ev.window,
+                   x: 0,
+                   y: 0,
+                   z: 0,
+                   size: (0,0)
+                };
+                ServerEvent::MapRequest(w)
             },
             _ => ServerEvent::Unknown
         }
