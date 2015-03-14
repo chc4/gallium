@@ -1,4 +1,5 @@
 extern crate libc;
+use std::cell::RefCell;
 use std::old_path::BytesContainer;
 use self::libc::funcs::c95::stdlib::malloc;
 pub use xlib::*;
@@ -15,7 +16,7 @@ pub use key::{
     MOD5 
 };
 use config::KeyBind;
-use std::ffi::{CString,c_str_to_bytes};
+use std::ffi::{CString,CStr,c_str_to_bytes};
 use std::ptr::{null_mut};
 
 //Event types
@@ -92,23 +93,24 @@ pub struct XServer {
     pub display: *mut Display, //Why is this called Display, it's a Connection
     root: Window,
     event: *mut XEvent,
-    keys: Vec<Key>
+    keys: Vec<Key>,
+    pub kommand_mod: RefCell<Option<KeyMod>>
 }
 
 //Actually just a wrapper around XEvents of the same name, but more info
 pub enum ServerEvent {
     ButtonPress((i32,i32)),
     KeyPress(Key),
-    CreateNotify(Window,(i32,i32)),
+    MapRequest(Window,(i32,i32)),
     Unknown
 }
 
-pub fn keysym_to_string(sym: KeySym) -> CString {
+pub fn keysym_to_string(sym: KeySym) -> &'static CStr {
     unsafe {
         let s: *const i8 = XKeysymToString(sym);
         //I don't know enough about Rust FFI to know if this will memory leak, but I fear it will
         //CString::from_slice(&*(s as *const [u8]))
-        CString::from_slice(c_str_to_bytes(&s))
+        &CStr::from_ptr(s)
     }
 }
 
@@ -132,7 +134,8 @@ impl XServer {
             display: disp,
             root: root,
             event: malloc(256) as *mut XEvent,//unsafe { *malloc(size_of::<XEvent>() as *const XEvent) }, //Stolen from wtftw(ish)
-            keys: Vec::new()
+            keys: Vec::new(),
+            kommand_mod: RefCell::new(None)
         }
     }
 
@@ -174,11 +177,11 @@ impl XServer {
                 let k = Key::parse(ev.keycode as KeyCode,ev.state,self);
                 ServerEvent::KeyPress(k)
             },
-            CreateNotify => unsafe {
+            MapRequest => unsafe {
                 let ev = self.get_event_as::<XCreateWindowEvent>();
                 println!("Window added {}",ev.window);
                 println!(">(X,Y) ({},{})",ev.x,ev.y);
-                ServerEvent::CreateNotify(ev.window,(ev.x,ev.y))
+                ServerEvent::MapRequest(ev.window,(ev.x,ev.y))
             },
             _ => ServerEvent::Unknown
         }

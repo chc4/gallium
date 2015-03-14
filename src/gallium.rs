@@ -1,4 +1,4 @@
-#![feature(rustc_private,os)]
+#![feature(rustc_private,os,old_path,std_misc,old_io,collections)]
 #[macro_use] extern crate log;
 extern crate "rustc-serialize" as rustc_serialize;
 #[macro_use] extern crate rustc_bitflags;
@@ -7,6 +7,7 @@ extern crate xlib;
 use config::{Config,ConfigLock};
 use window_manager::WindowManager;
 use xserver::{XServer,ServerEvent};
+use key::Key;
 
 pub mod config;
 pub mod window_manager;
@@ -38,7 +39,7 @@ impl<'a> Gallium<'a> {
         loop {
             debug!("Polling event...");
             match self.window_server.get_event() {
-                ServerEvent::CreateNotify(window, (x,y)) => {
+                ServerEvent::MapRequest(window, (x,y)) => {
                     //For now just adding to the current workspace
                     self.window_manager.workspaces.current().unwrap().windows.push(window);
                     self.window_server.map(window);
@@ -46,6 +47,9 @@ impl<'a> Gallium<'a> {
                 },
                 ServerEvent::KeyPress(key) => {
                     println!("Key press:{:?}",key);
+                    if key == *self.config.current().term_key.unwrap() {
+                        println!("Should probably spawn a terminal right here");
+                    }
                 }
                 _ => {
                     println!("Fetched event");
@@ -60,7 +64,8 @@ fn main(){
     for argument in std::os::args().iter() {
         println!("{}", argument);
         if argument[..].eq("--revert") {
-            Config::reset(&mut gl.config.current())
+            Config::reset(&mut gl.config.current());
+            println!("Reverted config!");
         }
     }
     debug!("Gallium has been setup.");

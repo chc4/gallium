@@ -59,7 +59,7 @@ pub struct Config {
     /// Default tags for workspaces
     pub tags: Vec<String>,
     /// Modifier for WM keybinds
-    pub kontrol: KeyBind,
+    pub kommand: KeyBind,
     /// Default launcher application
     pub launcher: String,
     /// Keybind for the launcher and configuration reloading
@@ -102,13 +102,13 @@ fn default() -> Config {
         border_color:        0x00FFB6B0,
         border_width:        2,
         spacing:             10,
-        terminal:            (String::from_str("urxvt"), String::from_str("")),
+        terminal:            ("urxvt".to_string(), "".to_string()),
         tags:                vec!(
             "1: term".to_string(),
             "2: web".to_string(),
             "3: code".to_string(),
             "4: media".to_string()),
-        kontrol: KeyBind::create("M2-".to_string()),
+        kommand: KeyBind::create("M4-".to_string()),
         launcher: "dmenu".to_string(),
         launch_key: KeyBind::create("K-S-p".to_string()),
         reload_key: KeyBind::create("K-p".to_string()),
@@ -123,7 +123,7 @@ impl Config {
     pub fn initialize() -> Config {
         let path = Path::new(CString::from_slice(format!("{}/.galliumrc", homedir().unwrap().as_str().unwrap()).as_bytes()));
         let mut conf_file = File::open_mode(&path,Open,ReadWrite).unwrap();
-        let dec_conf = match json::decode(conf_file.read_to_string().unwrap().as_slice()) {
+        let dec_conf = match json::decode(&conf_file.read_to_string().unwrap()[..]) {
             Ok(v) => v,
             Err(e) =>{
                         println!("Our config is corrupted!");
@@ -135,15 +135,18 @@ impl Config {
     }
     pub fn setup(&mut self, serv: &mut XServer){
         serv.clear_keys();
-        //Instance Kontrol to a valid Key
-        let mut kchord = self.kontrol.chord.clone();
+        //Instance Kommand to a valid Key
+        let mut kchord = self.kommand.chord.clone();
         kchord.push_str("A"); //Make it a parsable KeyBind
-        self.kontrol.binding = Some(Key::create(kchord,serv));
+        self.kommand.binding = Some(Key::create(kchord,serv));
+        //...And then add kontrol to the XServer cell (hacky!)
+        *serv.kommand_mod.borrow_mut() = Some(self.kommand.unwrap().modifier.clone());
+ 
         //Register the workspace hotkeys
         let numkey = ["1","2","3","4","5","6","7","8","9","0"];
         for num in numkey.iter() {
             let mut k = Key::create(num.to_string(),serv);
-            k.modifier = k.modifier | self.kontrol.unwrap().modifier;
+            k.modifier = k.modifier | self.kommand.unwrap().modifier;
             serv.add_key(k);
         }
         let mut parse = vec!(
@@ -164,7 +167,7 @@ impl Config {
         //conf_file.truncate(0);
         let path = Path::new(CString::from_slice(format!("{}/.galliumrc", homedir().unwrap().as_str().unwrap()).as_bytes()));
         let mut conf_file = File::open_mode(&path,Truncate,ReadWrite).unwrap();
-        conf_file.write_str(json::encode::<Config>(&default()).unwrap().as_slice());
+        conf_file.write_str(&json::encode::<Config>(&default()).unwrap()[..]);
         conf_file.fsync();
     }
 

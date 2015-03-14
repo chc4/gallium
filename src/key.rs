@@ -18,7 +18,7 @@ bitflags! {
     }
 }
 
-#[derive(PartialEq,Eq,Clone,Copy)]
+#[derive(Eq,PartialEq,Clone,Copy)]
 pub struct Key {
     pub code: KeyCode,
     pub sym: KeySym,
@@ -27,15 +27,7 @@ pub struct Key {
 const LOOKUP: [&'static str; 9] = ["S-","Lock-","C-","M-","M2-","M3-","M4-","M5-","K-"];
 impl Debug for Key {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        let mut pref = "".to_string();
-        for b in range(0,8){
-            if self.modifier.bits() & (1<<b) == 1<<b {
-                pref.push_str(LOOKUP[b]);
-            }
-        }
-        let cs = keysym_to_string(self.sym);
-        
-        let x = from_utf8(cs.as_bytes()).unwrap();
+        let (pref,x) = self.chord();        
         write!(f,"{}{}",pref,x)
     }
 }
@@ -44,10 +36,16 @@ impl Key {
     pub fn parse(code: KeyCode, modifier: u32, serv: &XServer) -> Key {
         let mut sym = 0;
         sym = serv.keycode_to_keysym(code);
-        let mo = match KeyMod::from_bits(modifier) {
+        let mut mo = match KeyMod::from_bits(modifier) {
             Some(v) => v,
             None => KeyMod::empty()
         };
+        // Replace the KOMMAND bit with what it's set to
+        if (mo & KOMMAND) == KOMMAND {
+            println!("Replace KOMMAND pls");
+            mo = mo | serv.kommand_mod.borrow().unwrap();
+            mo = mo & !KOMMAND; 
+        }
         Key {
             code: code,
             sym: sym,
@@ -61,12 +59,17 @@ impl Key {
         for mut m in s.split('-') {
             let mut full = m.to_string();
             full.push_str("-");
-            match LOOKUP.position_elem(&full.as_slice()) {
-                Some(v) => {
-                    flag = flag | 1<<v;
-                },
-                None => {
-                    key = m;
+            if full == "K-" {
+                flag = flag | serv.kommand_mod.borrow().unwrap().bits();
+            }
+            else {
+                match LOOKUP.position_elem(&full.as_slice()) {
+                    Some(v) => {
+                        flag = flag | 1<<v;
+                    },
+                    None => {
+                        key = m;
+                    }
                 }
             }
         }
@@ -82,5 +85,18 @@ impl Key {
             sym: sym,
             modifier: flag
         }
+    }
+
+    pub fn chord(&self) -> (String,&'static str) {
+        let mut pref = "".to_string();
+        for b in range(0,8){
+            if self.modifier.bits() & (1<<b) == 1<<b {
+                pref.push_str(LOOKUP[b]);
+            }
+        }
+        let cs = keysym_to_string(self.sym);
+        
+        let x = from_utf8(cs.to_bytes()).unwrap();
+        (pref,x)
     }
 }
