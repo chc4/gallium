@@ -1,26 +1,37 @@
 extern crate xlib;
+extern crate serialize;
 use std::os::homedir;
 use std::sync::RwLock;
 use rustc_serialize::{Encodable,Decodable,json,Encoder,Decoder};
+use serialize::Decoder as StdDecoder;
 use std::old_io::{File,Open,Truncate,ReadWrite,Reader};
 use key::Key;
 use xserver::XServer;
 use std::ffi::CString;
 // Common configuration options for the window manager.
+#[derive(Clone,RustcDecodable,RustcEncodable)]
+pub enum Message {
+    Spawn(String,String),
+    Reload,
+    None,
+}
 
 #[derive(Clone)]
 pub struct KeyBind {
     pub binding: Option<Key>, //Can't store the Key in this
-    pub chord: String
+    pub chord: String,
+    pub message: Message
 }
 
-impl KeyBind{
-    pub fn create(s: String) -> KeyBind {
+impl KeyBind {
+    pub fn new(s: &str, mess: Message) -> KeyBind {
         KeyBind {
             binding: None,
-            chord: s
+            chord: s.to_string(),
+            message: mess
         }
     }
+    
     pub fn unwrap(&self) -> &Key {
         self.binding.as_ref().unwrap()
     }
@@ -28,49 +39,30 @@ impl KeyBind{
 //When decoding JSON to Config, we need to have the JSON hold *only* the chord
 impl Decodable for KeyBind {
     fn decode<D: Decoder>(d: &mut D) -> Result<KeyBind,D::Error> {
-        let k = KeyBind {
-            binding: None,
-            chord: try!(d.read_str())
-        };
-        Ok(k)
+        d.read_tuple(2,|d: &mut D|{
+            let k = KeyBind {
+                binding: None,
+                chord: try!(d.read_str()),
+                message: try!(<Message as Decodable>::decode(d))
+            };
+            Ok(k)
+        })
     }
 }
 //Manually implement KeyBind serialization so it saves it in key chord format
 impl Encodable for KeyBind {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(),S::Error> {
-        s.emit_str(&self.chord[..])
+        s.emit_tuple(2,|s: &mut S|{
+            s.emit_tuple_arg(0,|s: &mut S| s.emit_str(&self.chord[..]) );
+            s.emit_tuple_arg(1,|s: &mut S| self.message.encode::<S>(s) )
+        })
     }
 }
 #[derive(RustcEncodable,RustcDecodable,Clone)]
 pub struct Config {
-    /// Whether focus follows mouse movements or
-    /// only click events and keyboard movements.
-    pub focus_follows_mouse: bool,
-    /// Border color for focused windows.
-    pub focus_border_color: u32,
-    /// Border color for unfocused windows.
-    pub border_color: u32,
-    /// Border width. This is the same for both, focused and unfocused.
-    pub border_width: u32,
-    /// Default spacing between windows
-    pub spacing: u32,
-    /// Default terminal to start
-    pub terminal: (String, String),
-    /// Default tags for workspaces
-    pub tags: Vec<String>,
-    /// Modifier for WM keybinds
-    pub kommand: KeyBind,
-    /// Default launcher application
-    pub launcher: String,
-    /// Keybind for the launcher and configuration reloading
-    pub launch_key: KeyBind,
-    /// Keybind for reloading this struct from a JSON file
-    pub reload_key: KeyBind,
-    /// Keybind for launching the terminal
-    pub term_key: KeyBind,
-    /// Hotkeys for switching left and right from the current workspace
-    pub workspace_left: KeyBind,
-    pub workspace_right: KeyBind
+    pub terminal: (String,String),
+    kommand: KeyBind,
+    pub keys: Vec<KeyBind>,
 }
 pub struct ConfigLock {
     conf: RwLock<Config>
@@ -95,26 +87,32 @@ at that point in time)
 You can also do config.update(new_config) on a keybind, so everything
 is super hotswappable and happy. Yaay.
 */
+
+/*
+ * Ok so problem:
+ * Adding new keys is a giant pain.
+ * Add a new field to Config, add a new default
+ * set the new default to KeyBind::Create("new-bind")
+ * add the key to the initializion list
+ * (eventually) add it to the callback registering
+ *
+ * Solution:
+ * Instead just have a Vec<T> of Keys
+ * Have the Key also have a command field
+ * command is an enum for what the message is
+ * Command::Reload would be matched...uh, somewhere
+ * and do the actual command
+ *
+ * (i totally didn't steal this idea from xr3wm nope i am super original)
+*/
 fn default() -> Config {
     Config {
-        focus_follows_mouse: true,
-        focus_border_color:  0x00B6FFB0,
-        border_color:        0x00FFB6B0,
-        border_width:        2,
-        spacing:             10,
-        terminal:            ("urxvt".to_string(), "".to_string()),
-        tags:                vec!(
-            "1: term".to_string(),
-            "2: web".to_string(),
-            "3: code".to_string(),
-            "4: media".to_string()),
-        kommand: KeyBind::create("M4-".to_string()),
-        launcher: "dmenu".to_string(),
-        launch_key: KeyBind::create("K-S-p".to_string()),
-        reload_key: KeyBind::create("K-p".to_string()),
-        term_key: KeyBind::create("S-K-Return".to_string()),
-        workspace_left: KeyBind::create("K-Left".to_string()),
-        workspace_right: KeyBind::create("K-Right".to_string())
+        terminal: ("urxvt".to_string(), "".to_string()),
+        kommand: KeyBind::new("M4-",Message::None),
+        keys: vec!(
+            KeyBind::new("K-S-Return",Message::Spawn("urxvt".to_string(),"".to_string())),
+            KeyBind::new("K-q",Message::Reload)
+        ),
     }
 }
 
@@ -149,13 +147,7 @@ impl Config {
             k.modifier = k.modifier | self.kommand.unwrap().modifier;
             serv.add_key(k);
         }
-        let mut parse = vec!(
-            &mut self.launch_key,
-            &mut self.reload_key,
-            &mut self.term_key,
-            &mut self.workspace_left,
-            &mut self.workspace_right);
-        for k in parse.iter_mut() {
+        for ref mut k in self.keys.iter_mut() {
             let p = Key::create(k.chord.clone(),serv);
             k.binding = Some(p);
             serv.add_key(p);

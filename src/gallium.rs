@@ -4,7 +4,7 @@ extern crate "rustc-serialize" as rustc_serialize;
 #[macro_use] extern crate rustc_bitflags;
 extern crate serialize;
 extern crate xlib;
-use config::{Config,ConfigLock};
+use config::{Message,Config,ConfigLock};
 use window_manager::WindowManager;
 use xserver::{XServer,ServerEvent};
 use key::Key;
@@ -52,17 +52,26 @@ impl<'a> Gallium<'a> {
                 },
                 ServerEvent::KeyPress(key) => {
                     println!("Key press:{:?}",key);
-                    if key == *self.config.current().term_key.unwrap() {
-                        println!("Should probably spawn a terminal right here");
-                        let (term,args) = self.config.current().terminal.clone();
-                        let (term,args) = (term.as_slice(),args.as_slice());
-                        let mut c = Command::new(term);
-                        if args.len()>0 {
-                            let co = c.arg(args);
-                            co.spawn();
-                        }
-                        else {
-                            c.spawn();
+
+                    for k in self.config.current().keys {
+                        if k.binding.unwrap() == key {
+                            match k.message {
+                                Message::Spawn(term,arg) => {
+                                    println!("Spawning terminal...");
+                                    let (term,args) = self.config.current().terminal.clone();
+                                    let (term,args) = (term.as_slice(),args.as_slice());
+                                    let mut c = Command::new(term);
+                                    if args.len()>0 {
+                                        let co = c.arg(args);
+                                        co.spawn();
+                                    }
+                                    else {
+                                        c.spawn();
+                                    }
+                                },
+                                Message::None => (),
+                                _ => println!("Unknown key message!")
+                            }
                         }
                     }
                 },

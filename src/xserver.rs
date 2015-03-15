@@ -1,3 +1,4 @@
+#[allow(non_upper_case_globals)]
 extern crate libc;
 use std::cell::RefCell;
 use std::old_path::BytesContainer;

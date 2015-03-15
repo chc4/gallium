@@ -22,10 +22,10 @@ pub enum Layouts {
 }
 
 pub enum Resize {
-    Shrink_Horz,
-    Shrink_Vert,
-    Grow_Horz,
-    Grow_Vert
+    ShrinkHorz,
+    ShrinkVert,
+    GrowHorz,
+    GrowVert
 }
 
 pub struct TallLayout {
@@ -87,10 +87,10 @@ impl Layout for TallLayout {
     fn resize(&mut self, message: Resize){
         // lol ignore horz it's tall layout remember
         match message {
-            Resize::Shrink_Horz => {
+            Resize::ShrinkHorz => {
                 self.columns-=1;
             },
-            Resize::Grow_Horz => {
+            Resize::GrowHorz => {
                 self.columns+=1;
             },
             _ => ()
