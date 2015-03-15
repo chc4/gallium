@@ -1,7 +1,7 @@
 extern crate xlib;
 use std::os::homedir;
 use std::sync::RwLock;
-use rustc_serialize::{Encodable,Decodable,json, Encoder,Decoder};
+use rustc_serialize::{Encodable,Decodable,json,Encoder,Decoder};
 use std::old_io::{File,Open,Truncate,ReadWrite,Reader};
 use key::Key;
 use xserver::XServer;
@@ -168,7 +168,13 @@ impl Config {
         //conf_file.truncate(0);
         let path = Path::new(CString::from_slice(format!("{}/.galliumrc", homedir().unwrap().as_str().unwrap()).as_bytes()));
         let mut conf_file = File::open_mode(&path,Truncate,ReadWrite).unwrap();
-        conf_file.write_str(&json::encode::<Config>(&default()).unwrap()[..]);
+        let mut buff = String::new();
+        {
+            let mut pretty = json::Encoder::new_pretty(&mut buff);
+            (&default()).encode(&mut pretty).unwrap();
+        }
+        //conf_file.write_str(&json::encode::<Config>(&default()).unwrap()[..]);
+        conf_file.write_str(&buff[..]);
         conf_file.fsync();
     }
 
