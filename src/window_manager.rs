@@ -50,13 +50,13 @@ impl<T> Deck<T>{
         }
         Some(r.unwrap())
     }
-    pub fn swap(&mut self,pos1: u32,pos2: u32){
-        self.cards.swap(pos1 as usize,pos2 as usize);
+    pub fn swap(&mut self,pos1: usize,pos2: usize){
+        self.cards.swap(pos1,pos2);
     }
     //This is O(n) and re-allocates everything right of the index. It's bad.
-    pub fn remove(&mut self,ind: u32) -> Option<T> {
-        let k = self.cards.remove(ind as usize);
-        if self.current.is_some() && self.current.unwrap() >= ind as usize {
+    pub fn remove(&mut self,ind: usize) -> Option<T> {
+        let k = self.cards.remove(ind);
+        if self.current.is_some() && self.current.unwrap() >= ind {
             self.current = None
         }
         Some(k)

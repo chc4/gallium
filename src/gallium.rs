@@ -4,6 +4,7 @@ extern crate "rustc-serialize" as rustc_serialize;
 #[macro_use] extern crate rustc_bitflags;
 extern crate serialize;
 extern crate xlib;
+extern crate libc;
 use config::{Message,Config,ConfigLock};
 use window_manager::WindowManager;
 use xserver::{XServer,ServerEvent};
@@ -69,6 +70,35 @@ impl<'a> Gallium<'a> {
                                         c.spawn();
                                     }
                                 },
+                                Message::Reload => {
+                                    let mut new_conf = Config::new();
+                                    new_conf.setup(&mut self.window_server);
+                                    self.config = new_conf;
+                                    println!("Config reloaded OK!");
+                                },
+                                Message::Quit => {
+                                    unsafe {
+                                        self.window_server.quit();
+                                        println!("Goodbye!");
+                                        libc::exit(0);
+                                    }
+                                },
+                                Message::Kill => {
+                                    let mut work = self.window_manager.workspaces.current().unwrap();
+                                    {
+                                        let mut wind = work.windows.current();
+                                        if wind.is_some() {
+                                            unsafe {
+                                                self.window_server.kill_window(wind.unwrap().wind_ptr);
+                                                println!("Killed window");
+                                            }
+                                        }
+                                    }
+                                    let wind_ind = work.windows.current;
+                                    if wind_ind.is_some() {
+                                        work.windows.remove(wind_ind.unwrap());
+                                    }
+                                }
                                 Message::None => (),
                                 _ => println!("Unknown key message!")
                             }
@@ -81,8 +111,8 @@ impl<'a> Gallium<'a> {
                         for wind_ind in range(0,work.windows.cards.len()) {
                             if work.windows.cards[wind_ind].wind_ptr == wind_ptr {
                                 println!("Window {} removed from Workspace",wind_ind);
-                                work.layout.remove(wind_ind as u32);
-                                work.windows.remove(wind_ind as u32);
+                                work.layout.remove(wind_ind);
+                                work.windows.remove(wind_ind);
                                 work.refresh(&mut self.window_server, screen, self.config.current());
                                 break;
                             }
@@ -104,6 +134,7 @@ fn main(){
         if argument[..].eq("--revert") {
             Config::reset(&mut gl.config.current());
             println!("Reverted config!");
+            return;
         }
     }
     debug!("Gallium has been setup.");

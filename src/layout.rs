@@ -7,9 +7,9 @@ pub trait Layout {
     fn apply(&self, &mut XServer, screen: u32, &mut Deck<Window>, &mut Config);
     fn resize(&mut self, Resize);
     fn add(&mut self, &mut Window);
-    fn remove(&mut self, u32);
-    fn add_master(&mut self, u32);
-    fn remove_master(&mut self, u32);
+    fn remove(&mut self, usize);
+    fn add_master(&mut self, usize);
+    fn remove_master(&mut self, usize);
 }
 
 #[derive(Copy,PartialEq)]
@@ -69,18 +69,18 @@ impl Layout for TallLayout {
         }
     }
     
-    fn add_master(&mut self, ind: u32){
+    fn add_master(&mut self, ind: usize){
         
     }
     
-    fn remove_master(&mut self, ind: u32){
+    fn remove_master(&mut self, ind: usize){
     
     }
 
     fn add(&mut self, wind: &mut Window){
         println!("Added a new window, yaaay");
     }
-    fn remove(&mut self, ind: u32){
+    fn remove(&mut self, ind: usize){
         println!("Removed window {}, oh nooo",ind);
     }
 

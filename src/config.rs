@@ -8,11 +8,31 @@ use std::old_io::{File,Open,Truncate,ReadWrite,Reader};
 use key::Key;
 use xserver::XServer;
 use std::ffi::CString;
+use self::Direction::*;
 // Common configuration options for the window manager.
+
+#[derive(Clone,RustcDecodable,RustcEncodable)]
+pub enum Direction {
+    Backward,
+    Forward,
+    Up, //Generally unused, but if I ever want 2d-array workspaces...
+    Down
+}
 #[derive(Clone,RustcDecodable,RustcEncodable)]
 pub enum Message {
     Spawn(String,String),
     Reload,
+    Quit,
+    Kill,
+    Shrink,
+    Grow,
+    Move(Direction),
+    Translate(Direction),
+    Switch(Direction),
+    Bring(Direction),
+    Master,
+    SpecialAdd,
+    SpecialSub,
     None,
 }
 
@@ -60,8 +80,11 @@ impl Encodable for KeyBind {
 }
 #[derive(RustcEncodable,RustcDecodable,Clone)]
 pub struct Config {
-    pub terminal: (String,String),
     kommand: KeyBind,
+    pub terminal: (String,String),
+    pub padding: u16,
+    pub border: u16,
+    pub spacing: u16,
     pub keys: Vec<KeyBind>,
 }
 pub struct ConfigLock {
@@ -107,11 +130,31 @@ is super hotswappable and happy. Yaay.
 */
 fn default() -> Config {
     Config {
-        terminal: ("urxvt".to_string(), "".to_string()),
         kommand: KeyBind::new("M4-",Message::None),
+        padding: 5,
+        border: 3,
+        spacing: 5,
+        terminal: ("urxvt".to_string(), "".to_string()),
         keys: vec!(
             KeyBind::new("K-S-Return",Message::Spawn("urxvt".to_string(),"".to_string())),
-            KeyBind::new("K-q",Message::Reload)
+            KeyBind::new("K-q",Message::Reload),
+            KeyBind::new("K-S-q",Message::Quit),
+            KeyBind::new("K-x",Message::Kill),
+            KeyBind::new("K-j",Message::Shrink),
+            KeyBind::new("K-;",Message::Grow),
+            KeyBind::new("K-k",Message::Move(Forward)),
+            KeyBind::new("K-l",Message::Move(Backward)),
+            KeyBind::new("K-S-k",Message::Translate(Forward)),
+            KeyBind::new("K-S-l",Message::Translate(Backward)),
+            
+            KeyBind::new("K-Right",Message::Switch(Forward)),
+            KeyBind::new("K-Left",Message::Switch(Backward)),
+            KeyBind::new("K-S-Right",Message::Bring(Forward)),
+            KeyBind::new("K-S-Left",Message::Bring(Backward)),
+
+            KeyBind::new("K-Enter",Message::Master),
+            KeyBind::new("K-,",Message::SpecialAdd),
+            KeyBind::new("K-.",Message::SpecialSub),
         ),
     }
 }

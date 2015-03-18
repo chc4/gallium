@@ -20,7 +20,9 @@ pub use key::{
 };
 use config::KeyBind;
 use std::ffi::{CString,CStr,c_str_to_bytes};
-use std::ptr::{null_mut};
+use std::ptr::{null_mut,read};
+use std::mem::{zeroed,transmute};
+use self::libc::{c_long,c_ulong,c_void,c_int};
 
 //Event types
 const KeyPress: i32       = 2i32;
@@ -161,6 +163,57 @@ impl XServer {
         unsafe {
             let (s_x,s_y) = gwind.size;
             XMoveResizeWindow(self.display, gwind.wind_ptr, gwind.x as i32, gwind.y as i32, s_x as u32, s_y as u32);
+        }
+    }
+    
+    pub unsafe fn kill_window(&mut self, wind: Window){
+        //Holy shit this is terrible
+        let mut data: [c_long; 5] = zeroed();
+        let mut wmproto = self.get_atom("WM_PROTOCOLS");
+        let mut wmkill = self.get_atom("WM_DELETE_WINDOW");
+        data[0] = wmkill as c_long;
+        data[1] = 0 as c_long; //CurrentTime
+        struct XClientBullshit {
+            _type: c_int,
+            serial: c_ulong,
+            send_event: c_int,
+            display: *mut Display,
+            window: Window,
+            message_type: Atom,
+            format: c_int,
+            data: [c_long; 5],
+        }
+        
+        let mut message = XClientBullshit {
+            _type: ClientMessage,
+            serial: 0,
+            send_event: 0,
+            display: self.display,
+            window: wind,
+            message_type: wmproto,
+            format: 32,
+            data: data, //There is no way this works
+        };
+        let mess_ptr = &mut message as *mut XClientBullshit as *mut XClientMessageEvent;
+        XSendEvent(self.display, wind, 0 /*false*/, NoEventMask, (mess_ptr as *mut XEvent));
+    }
+
+    pub unsafe fn quit(&mut self){
+        let mut root_return: Window = zeroed();
+        let mut parent: Window = zeroed();
+        let mut children: *mut Window = zeroed(); 
+        let mut nchildren: u32 = 0;
+
+        XQueryTree(self.display, self.root, &mut root_return, &mut parent, &mut children, &mut nchildren);
+        for ind in range(0,nchildren as isize){
+            let wind: Window = *children.offset(ind);
+            self.kill_window(wind);
+        }
+    }
+
+    pub fn get_atom(&mut self, s: &str) -> Atom {
+        unsafe {
+            XInternAtom(self.display, CString::new(s).unwrap().as_ptr() as *mut i8, 1)
         }
     }
 
