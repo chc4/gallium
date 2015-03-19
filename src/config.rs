@@ -21,6 +21,7 @@ pub enum Direction {
 #[derive(Clone,RustcDecodable,RustcEncodable)]
 pub enum Message {
     Spawn(String,String),
+    Terminal,
     Reload,
     Quit,
     Kill,
@@ -136,7 +137,7 @@ fn default() -> Config {
         spacing: 5,
         terminal: ("urxvt".to_string(), "".to_string()),
         keys: vec!(
-            KeyBind::new("K-S-Return",Message::Spawn("urxvt".to_string(),"".to_string())),
+            KeyBind::new("K-S-Return",Message::Terminal),
             KeyBind::new("K-q",Message::Reload),
             KeyBind::new("K-S-q",Message::Quit),
             KeyBind::new("K-x",Message::Kill),

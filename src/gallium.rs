@@ -1,4 +1,4 @@
-#![feature(rustc_private,os,old_path,std_misc,old_io,collections)]
+#![feature(rustc_private,os,old_path,std_misc,old_io,collections,libc,core)]
 #[macro_use] extern crate log;
 extern crate "rustc-serialize" as rustc_serialize;
 #[macro_use] extern crate rustc_bitflags;
@@ -44,7 +44,7 @@ impl<'a> Gallium<'a> {
                 ServerEvent::MapRequest(mut window) => {
                     //For now just adding to the current workspace
                     let mut w = self.window_manager.workspaces.current().unwrap();
-                    let screen = self.window_manager.screens.current.unwrap() as u32; //index, not ptr
+                    let screen = self.window_manager.screens.index.unwrap() as u32;
                     let p = window.wind_ptr;
                     w.layout.add(&mut window);
                     w.windows.push(window);
@@ -53,11 +53,12 @@ impl<'a> Gallium<'a> {
                 },
                 ServerEvent::KeyPress(key) => {
                     println!("Key press:{:?}",key);
-
+                    //TODO: figure out how I am going to handle multi-screen
+                    let screen = self.window_manager.screens.index.unwrap() as u32;
                     for k in self.config.current().keys {
                         if k.binding.unwrap() == key {
                             match k.message {
-                                Message::Spawn(term,arg) => {
+                                Message::Terminal => {
                                     println!("Spawning terminal...");
                                     let (term,args) = self.config.current().terminal.clone();
                                     let (term,args) = (term.as_slice(),args.as_slice());
@@ -71,6 +72,7 @@ impl<'a> Gallium<'a> {
                                     }
                                 },
                                 Message::Reload => {
+                                    self.window_server.clear_keys();
                                     let mut new_conf = Config::new();
                                     new_conf.setup(&mut self.window_server);
                                     self.config = new_conf;
@@ -78,7 +80,7 @@ impl<'a> Gallium<'a> {
                                 },
                                 Message::Quit => {
                                     unsafe {
-                                        self.window_server.quit();
+                                        self.window_server.quit(k.binding.unwrap());
                                         println!("Goodbye!");
                                         libc::exit(0);
                                     }
@@ -94,11 +96,22 @@ impl<'a> Gallium<'a> {
                                             }
                                         }
                                     }
-                                    let wind_ind = work.windows.current;
+                                    let wind_ind = work.windows.index;
                                     if wind_ind.is_some() {
                                         work.windows.remove(wind_ind.unwrap());
                                     }
-                                }
+                                    work.refresh(&mut self.window_server, screen, self.config.current());
+                                },
+                                Message::SpecialAdd => {
+                                    let mut work = self.window_manager.workspaces.current().unwrap();
+                                    work.layout.special_add(work.windows.index);
+                                    work.refresh(&mut self.window_server, screen, self.config.current());
+                                },
+                                Message::SpecialSub => {
+                                    let mut work = self.window_manager.workspaces.current().unwrap();
+                                    work.layout.special_sub(work.windows.index);
+                                    work.refresh(&mut self.window_server, screen, self.config.current());
+                                },
                                 Message::None => (),
                                 _ => println!("Unknown key message!")
                             }
@@ -106,7 +119,7 @@ impl<'a> Gallium<'a> {
                     }
                 },
                 ServerEvent::DestroyNotify(wind_ptr) => {
-                    let screen = self.window_manager.screens.current.unwrap() as u32;
+                    let screen = self.window_manager.screens.index.unwrap() as u32;
                     for mut work in &mut self.window_manager.workspaces.cards[..] {
                         for wind_ind in range(0,work.windows.cards.len()) {
                             if work.windows.cards[wind_ind].wind_ptr == wind_ptr {

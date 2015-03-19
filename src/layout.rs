@@ -1,15 +1,24 @@
 use xserver::{XServer};
 use super::Gallium;
 use window_manager::{Deck,Workspace,Window};
-use config::Config;
+use config::{Config,Direction};
 
 pub trait Layout {
-    fn apply(&self, &mut XServer, screen: u32, &mut Deck<Window>, &mut Config);
-    fn resize(&mut self, Resize);
-    fn add(&mut self, &mut Window);
-    fn remove(&mut self, usize);
-    fn add_master(&mut self, usize);
-    fn remove_master(&mut self, usize);
+    fn apply(&self, screen: u32, xserv: &mut XServer, work: &mut Workspace, conf: &mut Config){
+        println!("Layout.apply unimplemented");
+    }
+    fn add(&mut self, &mut Window){
+        println!("Layout.add unimplemented");
+    }
+    fn remove(&mut self, usize){
+        println!("Layout.remove unimplemented");
+    }
+    fn special_add(&mut self, Option<usize>){
+        println!("Layout.add_special unimplemented");
+    }
+    fn special_sub(&mut self, Option<usize>){
+        println!("Layout.remove_special unimplemented");
+    }
 }
 
 #[derive(Copy,PartialEq)]
@@ -21,11 +30,24 @@ pub enum Layouts {
     Full
 }
 
-pub enum Resize {
-    ShrinkHorz,
-    ShrinkVert,
-    GrowHorz,
-    GrowVert
+//Placeholder layout for swapping
+pub struct HolderLayout;
+impl Layout for HolderLayout {
+    fn apply(&self, screen: u32, xserv: &mut XServer, work: &mut Workspace, config: &mut Config){
+        panic!("Called Layout.apply on placeholder!");
+    }
+    fn add(&mut self, wind: &mut Window){
+        panic!("Called Layout.add on placeholder!");
+    }
+    fn remove(&mut self, s: usize){
+        panic!("Called Layout.remove on placeholder!");
+    }
+    fn special_add(&mut self, s: Option<usize>){
+        panic!("Called Layout.add_special on placeholder!");
+    }
+    fn special_sub(&mut self, s: Option<usize>){
+        panic!("Called Layout.remove_special on placeholder!");
+    }
 }
 
 pub struct TallLayout {
@@ -34,8 +56,8 @@ pub struct TallLayout {
 }
 
 impl Layout for TallLayout {
-    fn apply(&self, xserv: &mut XServer, screen: u32, windows: &mut Deck<Window>, config: &mut Config){
-        let mut wind = &mut windows.cards[..];
+    fn apply(&self, screen: u32, xserv: &mut XServer, work: &mut Workspace, config: &mut Config){
+        let mut wind = &mut work.windows.cards[..];
         let (x,y) = (xserv.width(screen as u32) as usize,xserv.height(screen as u32) as usize);
 
         let mut col = if self.columns as usize >= wind.len() {
@@ -69,12 +91,16 @@ impl Layout for TallLayout {
         }
     }
     
-    fn add_master(&mut self, ind: usize){
-        
+    fn special_add(&mut self, ind: Option<usize>){
+        if self.columns < 5 {
+            self.columns+=1;
+        }
     }
     
-    fn remove_master(&mut self, ind: usize){
-    
+    fn special_sub(&mut self, ind: Option<usize>){
+        if self.columns > 1 {
+            self.columns-=1;
+        }
     }
 
     fn add(&mut self, wind: &mut Window){
@@ -82,18 +108,5 @@ impl Layout for TallLayout {
     }
     fn remove(&mut self, ind: usize){
         println!("Removed window {}, oh nooo",ind);
-    }
-
-    fn resize(&mut self, message: Resize){
-        // lol ignore horz it's tall layout remember
-        match message {
-            Resize::ShrinkHorz => {
-                self.columns-=1;
-            },
-            Resize::GrowHorz => {
-                self.columns+=1;
-            },
-            _ => ()
-        }
     }
 }

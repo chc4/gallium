@@ -198,17 +198,34 @@ impl XServer {
         XSendEvent(self.display, wind, 0 /*false*/, NoEventMask, (mess_ptr as *mut XEvent));
     }
 
-    pub unsafe fn quit(&mut self){
+    pub unsafe fn quit(&mut self,qkey: Key){
         let mut root_return: Window = zeroed();
         let mut parent: Window = zeroed();
         let mut children: *mut Window = zeroed(); 
         let mut nchildren: u32 = 0;
 
         XQueryTree(self.display, self.root, &mut root_return, &mut parent, &mut children, &mut nchildren);
+        if nchildren == 0 {
+            return;
+        }
         for ind in range(0,nchildren as isize){
             let wind: Window = *children.offset(ind);
-            self.kill_window(wind);
+            self.kill_window(wind); //Kill them softly
         }
+        'stall: while(nchildren > 0){
+            let ev = self.get_event();
+            match ev {
+                ServerEvent::KeyPress(key) => {
+                    if key == qkey { //They pressed the Quit button while waiting
+                        //I shall not ask nicely a second time
+                        break 'stall;
+                    }
+                },
+                _ => ()
+            }
+            XQueryTree(self.display, self.root, &mut root_return, &mut parent, &mut children, &mut nchildren);
+        }
+        self.clear_keys();
     }
 
     pub fn get_atom(&mut self, s: &str) -> Atom {
