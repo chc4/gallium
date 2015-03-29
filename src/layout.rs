@@ -70,7 +70,7 @@ impl Layout for TallLayout {
         }
         println!("Col: {}",col);
         let mcol = (col-1); //I use this a lot
-        for c in range(0,mcol) {
+        for c in 0..mcol {
             println!("Applying layout to window {} (master)",c);
             let ref mut w = wind[c];
             w.x = ((x/col)*c) as isize;
@@ -80,7 +80,7 @@ impl Layout for TallLayout {
         }
         if wind.len()-mcol as usize > 0 {
             let stack = wind.len()-mcol as usize;
-            for r in range(mcol,wind.len()) {
+            for r in mcol..wind.len() {
                 println!("Appling layout to window {}",r);
                 let ref mut w = wind[r as usize];
                 w.x = ((x/col)*mcol) as isize;

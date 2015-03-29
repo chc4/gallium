@@ -1,6 +1,6 @@
 #![feature(rustc_private,os,old_path,std_misc,old_io,collections,libc,core)]
 #[macro_use] extern crate log;
-extern crate "rustc-serialize" as rustc_serialize;
+extern crate rustc_serialize;
 #[macro_use] extern crate rustc_bitflags;
 extern crate serialize;
 extern crate xlib;
@@ -121,7 +121,7 @@ impl<'a> Gallium<'a> {
                 ServerEvent::DestroyNotify(wind_ptr) => {
                     let screen = self.window_manager.screens.index.unwrap() as u32;
                     for mut work in &mut self.window_manager.workspaces.cards[..] {
-                        for wind_ind in range(0,work.windows.cards.len()) {
+                        for wind_ind in 0..work.windows.cards.len() {
                             if work.windows.cards[wind_ind].wind_ptr == wind_ptr {
                                 println!("Window {} removed from Workspace",wind_ind);
                                 work.layout.remove(wind_ind);

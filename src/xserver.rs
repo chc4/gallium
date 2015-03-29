@@ -208,7 +208,7 @@ impl XServer {
         if nchildren == 0 {
             return;
         }
-        for ind in range(0,nchildren as isize){
+        for ind in 0..nchildren as isize {
             let wind: Window = *children.offset(ind);
             self.kill_window(wind); //Kill them softly
         }

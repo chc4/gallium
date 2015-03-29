@@ -41,7 +41,7 @@ impl Key {
             None => KeyMod::empty()
         };
         // Replace the KOMMAND bit with what it's set to
-        if (mo & KOMMAND) == KOMMAND {
+        if (mo & KOMMAND).bits() != 0 {
             println!("Replace KOMMAND pls");
             mo = mo | serv.kommand_mod.borrow().unwrap();
             mo = mo & !KOMMAND; 
@@ -89,7 +89,7 @@ impl Key {
 
     pub fn chord(&self) -> (String,&'static str) {
         let mut pref = "".to_string();
-        for b in range(0,8){
+        for b in 0..8 {
             if self.modifier.bits() & (1<<b) == 1<<b {
                 pref.push_str(LOOKUP[b]);
             }

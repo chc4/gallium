@@ -62,6 +62,19 @@ impl<T> Deck<T>{
         }
         Some(k)
     }
+    //Remove the element at index, but don't move self.index from it
+    //If the index is None or would be OoB, return false
+    pub fn forget(&mut self,ind: usize) -> bool {
+        let old = self.index.clone();
+        let elem = self.remove(ind);
+        if old.is_some() && self.index.is_none() {
+            if old.unwrap()<self.cards.len() {
+                self.select(old.unwrap()); 
+                return true
+            }
+        }
+        false
+    }
 
     fn slice(&mut self) -> &[T] {
         &self.cards[..]

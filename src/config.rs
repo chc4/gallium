@@ -4,7 +4,8 @@ use std::os::homedir;
 use std::sync::RwLock;
 use rustc_serialize::{Encodable,Decodable,json,Encoder,Decoder};
 use serialize::Decoder as StdDecoder;
-use std::old_io::{File,Open,Truncate,ReadWrite,Reader};
+use std::old_io::{File,Open,Truncate,ReadWrite,Reader,Writer};
+use std::old_path::{Path,GenericPath};
 use key::Key;
 use xserver::XServer;
 use std::ffi::CString;
@@ -27,7 +28,7 @@ pub enum Message {
     Kill,
     Shrink,
     Grow,
-    Move(Direction),
+    Focus(Direction),
     Translate(Direction),
     Switch(Direction),
     Bring(Direction),
@@ -143,8 +144,8 @@ fn default() -> Config {
             KeyBind::new("K-x",Message::Kill),
             KeyBind::new("K-j",Message::Shrink),
             KeyBind::new("K-;",Message::Grow),
-            KeyBind::new("K-k",Message::Move(Forward)),
-            KeyBind::new("K-l",Message::Move(Backward)),
+            KeyBind::new("K-k",Message::Focus(Forward)),
+            KeyBind::new("K-l",Message::Focus(Backward)),
             KeyBind::new("K-S-k",Message::Translate(Forward)),
             KeyBind::new("K-S-l",Message::Translate(Backward)),
             
