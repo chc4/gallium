@@ -5,7 +5,7 @@ extern crate rustc_serialize;
 extern crate serialize;
 extern crate xlib;
 extern crate libc;
-use config::{Message,Config,ConfigLock};
+use config::{Message,Config,ConfigLock,Direction};
 use window_manager::WindowManager;
 use xserver::{XServer,ServerEvent};
 use key::Key;
@@ -52,71 +52,7 @@ impl<'a> Gallium<'a> {
                     w.refresh(&mut self.window_server, screen, self.config.current());
                 },
                 ServerEvent::KeyPress(key) => {
-                    println!("Key press:{:?}",key);
-                    //TODO: figure out how I am going to handle multi-screen
-                    let screen = self.window_manager.screens.index.unwrap() as u32;
-                    for k in self.config.current().keys {
-                        if k.binding.unwrap() == key {
-                            match k.message {
-                                Message::Terminal => {
-                                    println!("Spawning terminal...");
-                                    let (term,args) = self.config.current().terminal.clone();
-                                    let (term,args) = (term.as_slice(),args.as_slice());
-                                    let mut c = Command::new(term);
-                                    if args.len()>0 {
-                                        let co = c.arg(args);
-                                        co.spawn();
-                                    }
-                                    else {
-                                        c.spawn();
-                                    }
-                                },
-                                Message::Reload => {
-                                    self.window_server.clear_keys();
-                                    let mut new_conf = Config::new();
-                                    new_conf.setup(&mut self.window_server);
-                                    self.config = new_conf;
-                                    println!("Config reloaded OK!");
-                                },
-                                Message::Quit => {
-                                    unsafe {
-                                        self.window_server.quit(k.binding.unwrap());
-                                        println!("Goodbye!");
-                                        libc::exit(0);
-                                    }
-                                },
-                                Message::Kill => {
-                                    let mut work = self.window_manager.workspaces.current().unwrap();
-                                    {
-                                        let mut wind = work.windows.current();
-                                        if wind.is_some() {
-                                            unsafe {
-                                                self.window_server.kill_window(wind.unwrap().wind_ptr);
-                                                println!("Killed window");
-                                            }
-                                        }
-                                    }
-                                    let wind_ind = work.windows.index;
-                                    if wind_ind.is_some() {
-                                        work.windows.remove(wind_ind.unwrap());
-                                    }
-                                    work.refresh(&mut self.window_server, screen, self.config.current());
-                                },
-                                Message::SpecialAdd => {
-                                    let mut work = self.window_manager.workspaces.current().unwrap();
-                                    work.layout.special_add(work.windows.index);
-                                    work.refresh(&mut self.window_server, screen, self.config.current());
-                                },
-                                Message::SpecialSub => {
-                                    let mut work = self.window_manager.workspaces.current().unwrap();
-                                    work.layout.special_sub(work.windows.index);
-                                    work.refresh(&mut self.window_server, screen, self.config.current());
-                                },
-                                Message::None => (),
-                                _ => println!("Unknown key message!")
-                            }
-                        }
-                    }
+                            self.dispatch_key(key);
                 },
                 ServerEvent::DestroyNotify(wind_ptr) => {
                     let screen = self.window_manager.screens.index.unwrap() as u32;
@@ -131,9 +67,110 @@ impl<'a> Gallium<'a> {
                             }
                         }
                     }
-                }
+                },
                 _ => {
                     println!("Fetched event");
+                }
+            }
+        }
+    }
+
+    fn dispatch_key(&mut self, key: Key){
+        println!("Key press:{:?}",key);
+        //TODO: figure out how I am going to handle multi-screen
+        let screen = self.window_manager.screens.index.unwrap() as u32;
+        for k in self.config.current().keys {
+            if k.binding.unwrap() == key {
+                match k.message {
+                    Message::Terminal => {
+                        println!("Spawning terminal...");
+                        let (term,args) = self.config.current().terminal.clone();
+                        let (term,args) = (term.as_slice(),args.as_slice());
+                        let mut c = Command::new(term);
+                        if args.len()>0 {
+                            let co = c.arg(args);
+                            co.spawn();
+                        }
+                        else {
+                            c.spawn();
+                        }
+                    },
+                    Message::Reload => {
+                        self.window_server.clear_keys();
+                        let mut new_conf = Config::new();
+                        new_conf.setup(&mut self.window_server);
+                        self.config = new_conf;
+                        println!("Config reloaded OK!");
+                    },
+                    Message::Quit => {
+                        unsafe {
+                            self.window_server.quit(k.binding.unwrap());
+                            println!("Goodbye!");
+                            libc::exit(0);
+                        }
+                    },
+                    Message::Kill => {
+                        let mut work = self.window_manager.workspaces.current().unwrap();
+                        {
+                            let mut wind = work.windows.current();
+                            if wind.is_some() {
+                                unsafe {
+                                    self.window_server.kill_window(wind.unwrap().wind_ptr);
+                                    println!("Killed window");
+                                }
+                            }
+                        }
+                        let wind_ind = work.windows.index;
+                        if wind_ind.is_some() {
+                            work.windows.forget(wind_ind.unwrap());
+                        }
+                        work.refresh(&mut self.window_server, screen, self.config.current());
+                    },
+                    Message::Focus(dir) => {
+                        let mut work = self.window_manager.workspaces.current().unwrap();
+                        match dir {
+                            Direction::Backward => {
+                                let i = work.windows.index.unwrap_or(1);
+                                let l = work.windows.cards.len();
+                                if l == 0 {
+                                    work.windows.index = None;
+                                }
+                                else if i == 0 {
+                                    work.windows.index = Some(l);
+                                }
+                                else {
+                                    work.windows.index = Some(i-1);
+                                }
+                            },
+                            Direction::Forward => {
+                                let i = work.windows.index.unwrap_or(-1);
+                                let l = work.windows.cards.len();
+                                if l == 0 {
+                                    work.windows.index = None;
+                                }
+                                else if i == (l-1) {
+                                    work.windows.index = Some(0);
+                                }
+                                else {
+                                    work.windows.index = Some(i+1);
+                                }
+                            },
+                            _ => ()
+                        }
+                        work.refresh(&mut self.window_server, screen, self.config.current());
+                    },
+                    Message::SpecialAdd => {
+                        let mut work = self.window_manager.workspaces.current().unwrap();
+                        work.layout.special_add(work.windows.index);
+                        work.refresh(&mut self.window_server, screen, self.config.current());
+                    },
+                    Message::SpecialSub => {
+                        let mut work = self.window_manager.workspaces.current().unwrap();
+                        work.layout.special_sub(work.windows.index);
+                        work.refresh(&mut self.window_server, screen, self.config.current());
+                    },
+                    Message::None => (),
+                    _ => println!("Unknown key message!")
                 }
             }
         }
