@@ -24,7 +24,7 @@ impl<T> Deck<T>{
             index: None
         }
     }
-    
+
     pub fn select(&mut self, ind: usize){
         if ind >= self.cards.len() {
             panic!("Selected a card index that doesn't exist");
@@ -69,7 +69,7 @@ impl<T> Deck<T>{
         let elem = self.remove(ind);
         if old.is_some() && self.index.is_none() {
             if old.unwrap()<self.cards.len() {
-                self.select(old.unwrap()); 
+                self.select(old.unwrap());
                 return true
             }
         }
@@ -137,6 +137,7 @@ impl<'a> WindowManager<'a> {
         let wind_deck = Deck::new();
         let lay = TallLayout {
             columns: 2,
+            stacks: 0,
             master: Vec::new()
         };
         let work = Workspace {

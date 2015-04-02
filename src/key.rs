@@ -27,7 +27,7 @@ pub struct Key {
 const LOOKUP: [&'static str; 9] = ["S-","Lock-","C-","M-","M2-","M3-","M4-","M5-","K-"];
 impl Debug for Key {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        let (pref,x) = self.chord();        
+        let (pref,x) = self.chord();
         write!(f,"{}{}",pref,x)
     }
 }
@@ -51,7 +51,7 @@ impl Key {
             sym: sym,
             modifier: mo
         }
-    } 
+    }
 
     pub fn create(s: String, serv: &XServer) -> Key {
         let mut flag = 0u32;

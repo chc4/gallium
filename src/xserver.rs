@@ -183,7 +183,7 @@ impl XServer {
             format: c_int,
             data: [c_long; 5],
         }
-        
+
         let mut message = XClientBullshit {
             _type: ClientMessage,
             serial: 0,
@@ -201,7 +201,7 @@ impl XServer {
     pub unsafe fn quit(&mut self,qkey: Key){
         let mut root_return: Window = zeroed();
         let mut parent: Window = zeroed();
-        let mut children: *mut Window = zeroed(); 
+        let mut children: *mut Window = zeroed();
         let mut nchildren: u32 = 0;
 
         XQueryTree(self.display, self.root, &mut root_return, &mut parent, &mut children, &mut nchildren);
@@ -316,7 +316,12 @@ impl XServer {
     pub fn string_to_keysym(&self,s: &mut String) -> KeySym {
         unsafe {
             let mut x = CString::from_slice(s.as_mut_vec().as_mut_slice());
-            XStringToKeysym(x.as_ptr() as *mut i8)
+            let sym = XStringToKeysym(x.as_ptr() as *mut i8);
+            if sym == 0 { //Invalid string!
+                //println!("{} is an invalid X11 keysym!",s);
+                panic!(format!("{} is an invalid X11 keysym!",s));
+            }
+            sym
         }
     }
 

@@ -136,14 +136,14 @@ impl<'a> Gallium<'a> {
                                     work.windows.index = None;
                                 }
                                 else if i == 0 {
-                                    work.windows.index = Some(l);
+                                    work.windows.index = Some(l-1);
                                 }
                                 else {
                                     work.windows.index = Some(i-1);
                                 }
                             },
                             Direction::Forward => {
-                                let i = work.windows.index.unwrap_or(-1);
+                                let i = work.windows.index.unwrap_or(0);
                                 let l = work.windows.cards.len();
                                 if l == 0 {
                                     work.windows.index = None;
@@ -159,14 +159,9 @@ impl<'a> Gallium<'a> {
                         }
                         work.refresh(&mut self.window_server, screen, self.config.current());
                     },
-                    Message::SpecialAdd => {
+                    Message::Special(dir) => {
                         let mut work = self.window_manager.workspaces.current().unwrap();
-                        work.layout.special_add(work.windows.index);
-                        work.refresh(&mut self.window_server, screen, self.config.current());
-                    },
-                    Message::SpecialSub => {
-                        let mut work = self.window_manager.workspaces.current().unwrap();
-                        work.layout.special_sub(work.windows.index);
+                        work.layout.special(dir);
                         work.refresh(&mut self.window_server, screen, self.config.current());
                     },
                     Message::None => (),

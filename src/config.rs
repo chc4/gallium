@@ -33,8 +33,7 @@ pub enum Message {
     Switch(Direction),
     Bring(Direction),
     Master,
-    SpecialAdd,
-    SpecialSub,
+    Special(Direction),
     None,
 }
 
@@ -53,7 +52,7 @@ impl KeyBind {
             message: mess
         }
     }
-    
+
     pub fn unwrap(&self) -> &Key {
         self.binding.as_ref().unwrap()
     }
@@ -143,20 +142,20 @@ fn default() -> Config {
             KeyBind::new("K-S-q",Message::Quit),
             KeyBind::new("K-x",Message::Kill),
             KeyBind::new("K-j",Message::Shrink),
-            KeyBind::new("K-;",Message::Grow),
+            KeyBind::new("K-semicolon",Message::Grow),
             KeyBind::new("K-k",Message::Focus(Forward)),
             KeyBind::new("K-l",Message::Focus(Backward)),
             KeyBind::new("K-S-k",Message::Translate(Forward)),
             KeyBind::new("K-S-l",Message::Translate(Backward)),
-            
+
             KeyBind::new("K-Right",Message::Switch(Forward)),
             KeyBind::new("K-Left",Message::Switch(Backward)),
             KeyBind::new("K-S-Right",Message::Bring(Forward)),
             KeyBind::new("K-S-Left",Message::Bring(Backward)),
 
-            KeyBind::new("K-Enter",Message::Master),
-            KeyBind::new("K-,",Message::SpecialAdd),
-            KeyBind::new("K-.",Message::SpecialSub),
+            KeyBind::new("K-Return",Message::Master),
+            KeyBind::new("K-comma",Message::Special(Backward)),
+            KeyBind::new("K-period",Message::Special(Forward)),
         ),
     }
 }
@@ -184,7 +183,7 @@ impl Config {
         self.kommand.binding = Some(Key::create(kchord,serv));
         //...And then add kontrol to the XServer cell (hacky!)
         *serv.kommand_mod.borrow_mut() = Some(self.kommand.unwrap().modifier.clone());
- 
+
         //Register the workspace hotkeys
         let numkey = ["1","2","3","4","5","6","7","8","9","0"];
         for num in numkey.iter() {
