@@ -165,7 +165,7 @@ impl XServer {
             XMoveResizeWindow(self.display, gwind.wind_ptr, gwind.x as i32, gwind.y as i32, s_x as u32, s_y as u32);
         }
     }
-    
+
     pub unsafe fn kill_window(&mut self, wind: Window){
         //Holy shit this is terrible
         let mut data: [c_long; 5] = zeroed();
@@ -192,7 +192,7 @@ impl XServer {
             window: wind,
             message_type: wmproto,
             format: 32,
-            data: data, //There is no way this works
+            data: data,
         };
         let mess_ptr = &mut message as *mut XClientBullshit as *mut XClientMessageEvent;
         XSendEvent(self.display, wind, 0 /*false*/, NoEventMask, (mess_ptr as *mut XEvent));

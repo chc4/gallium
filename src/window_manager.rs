@@ -10,11 +10,10 @@ use std::mem::swap;
 use std::ptr;
 
 //A Vec<T> that has a `current` member.
-//Selecting a new current will move that card to the top of the deck
 #[derive(PartialEq)]
 pub struct Deck<T>{
     pub cards: Vec<T>, //If you get weird mutability errors, RefCell<T>
-    pub index: Option<usize> 
+    pub index: Option<usize>
 }
 
 impl<T> Deck<T>{
@@ -93,7 +92,7 @@ pub struct Workspace<'a> {
 impl<'a> Workspace<'a>{
     pub fn refresh(&mut self, xserv: &mut XServer, screen: u32, mut config: Config){
         println!("Refresh");
-        //Swap self.layout so no dual-&mut 
+        //Swap self.layout so no dual-&mut
         let mut holder: Box<Layout> = Box::new(HolderLayout);
         swap(&mut holder, &mut self.layout);
         holder.apply(screen, xserv, self, &mut config);
@@ -118,7 +117,7 @@ pub struct Monitor {
 
 pub struct WindowManager<'a> {
     pub screens: Deck<Monitor>,
-    pub workspaces: Deck<Workspace<'a>> //Vec<Workspace>? List of all workspaces so we can increment each Screen
+    pub workspaces: Deck<Workspace<'a>>
 }
 
 impl<'a> WindowManager<'a> {
@@ -137,7 +136,6 @@ impl<'a> WindowManager<'a> {
         let wind_deck = Deck::new();
         let lay = TallLayout {
             columns: 2,
-            stacks: 0,
             master: Vec::new()
         };
         let work = Workspace {
@@ -160,7 +158,8 @@ impl<'a> WindowManager<'a> {
 
 /*
 
-WindowManager has a list of screens. The current screen should be a member of this.
-wm.current should probably be a refcell into the screens Vec
+WindowManager has a list of screens and a list of workspaces.
+The current screen should be a member of this.
+Each screen has a workspace index into the list, too.
 
 */

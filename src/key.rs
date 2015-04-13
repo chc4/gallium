@@ -4,7 +4,7 @@ use xlib::{KeyCode,KeySym};
 use xserver::{XServer,keysym_to_string};
 
 bitflags! {
-    #[allow(non_upper_case_globals)] 
+    #[allow(non_upper_case_globals)]
     flags KeyMod: u32 {
         const SHIFT   = 0b000000001,
         const LOCK    = 0b000000010,
@@ -44,7 +44,7 @@ impl Key {
         if (mo & KOMMAND).bits() != 0 {
             println!("Replace KOMMAND pls");
             mo = mo | serv.kommand_mod.borrow().unwrap();
-            mo = mo & !KOMMAND; 
+            mo = mo & !KOMMAND;
         }
         Key {
             code: code,
@@ -95,7 +95,7 @@ impl Key {
             }
         }
         let cs = keysym_to_string(self.sym);
-        
+
         let x = from_utf8(cs.to_bytes()).unwrap();
         (pref,x)
     }

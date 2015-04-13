@@ -61,42 +61,28 @@ impl Layout for HolderLayout {
 pub struct TallLayout {
     //How many splits there are.
     pub columns: u16,
-    //How many windows there are per column
-    pub stacks: u16,
     pub master: Vec<u32>
 }
-/*
- * If columns is x, there should be x master column and overflow
- * Add self.stacks windows to the each column, then draw the rest to overflow
-*/
+
 impl Layout for TallLayout {
     fn apply(&self, screen: u32, xserv: &mut XServer, work: &mut Workspace, config: &mut Config){
         let mut wind = &mut work.windows.cards[..];
         let (x,y) = (xserv.width(screen as u32) as usize,xserv.height(screen as u32) as usize);
 
         let mut col = clamp(1,self.columns as usize,wind.len());
-        /*if self.columns as usize >= wind.len() {
-            (wind.len()) as usize
-        } else {
-            self.columns as usize
-        };*/
         let mcol = (col-1); //I use this a lot
-        let stacks = clamp(1,self.stacks as usize,4);
-        let mstacks = (stacks-1);
-        println!("Col: {}, Stack:{}",col,stacks);
+        println!("Col: {}",col);
         for c in 0..mcol {
             println!("Applying layout to window {} (master)",c);
-            for s in 0..stacks {
-                let ref mut w = wind[(c*stacks)+s];
-                w.x = ((x/col)*c) as isize;
-                w.y = ((y/stacks)*s) as isize;
-                w.size = ((x/col) as usize,(y/stacks) as usize);
-                xserv.refresh(w);
-            }
+            let ref mut w = wind[c];
+            w.x = ((x/col)*c) as isize;
+            w.y = 0;
+            w.size = ((x/col) as usize,y);
+            xserv.refresh(w);
         }
-        if wind.len()-(mcol*stacks) as usize > 0 {
-            let stack = wind.len()-(mcol*stacks) as usize;
-            for r in (mcol*stacks)..wind.len() {
+        if wind.len()-mcol as usize > 0 {
+            let stack = wind.len()-mcol as usize;
+            for r in mcol..wind.len() {
                 println!("Appling layout to window {}",r);
                 let ref mut w = wind[r as usize];
                 w.x = ((x/col)*mcol) as isize;
@@ -115,12 +101,7 @@ impl Layout for TallLayout {
             Direction::Backward => if self.columns > 0 {
                 self.columns-=1;
             },
-            Direction::Up => if self.stacks < 4 {
-                self.stacks+=1;
-            },
-            Direction::Down => if self.stacks > 1 {
-                self.stacks-=1;
-            }
+            _ => ()
         }
     }
 

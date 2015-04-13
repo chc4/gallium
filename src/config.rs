@@ -39,7 +39,7 @@ pub enum Message {
 
 #[derive(Clone)]
 pub struct KeyBind {
-    pub binding: Option<Key>, //Can't store the Key in this
+    pub binding: Option<Key>,
     pub chord: String,
     pub message: Message
 }

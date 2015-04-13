@@ -52,7 +52,7 @@ impl<'a> Gallium<'a> {
                     w.refresh(&mut self.window_server, screen, self.config.current());
                 },
                 ServerEvent::KeyPress(key) => {
-                            self.dispatch_key(key);
+                    self.dispatch_key(key);
                 },
                 ServerEvent::DestroyNotify(wind_ptr) => {
                     let screen = self.window_manager.screens.index.unwrap() as u32;
