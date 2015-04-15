@@ -40,54 +40,73 @@ pub enum Layouts {
     Stacking,
     Full
 }
+pub fn LayoutFactory(form: Layouts) -> Box<Layout> {
+    let lay = match form {
+        Layouts::Tall => TallLayout {
+            master: 1,
+            percent: 50.0
+        },
+        _ => panic!("Unimplemented layout form!")
+    };
+    Box::new(lay)
+}
 
 //Placeholder layout for swapping
 pub struct HolderLayout;
-impl Layout for HolderLayout {
-    fn apply(&self, screen: u32, xserv: &mut XServer, work: &mut Workspace, config: &mut Config){
-        panic!("Called Layout.apply on placeholder!");
-    }
-    fn add(&mut self, wind: &mut Window){
-        panic!("Called Layout.add on placeholder!");
-    }
-    fn remove(&mut self, s: usize){
-        panic!("Called Layout.remove on placeholder!");
-    }
-    fn special(&mut self, dir: Direction){
-        panic!("Called Layout.special on placeholder!");
-    }
-}
+impl Layout for HolderLayout { }
 
+/*
+ * Like spectrwm's tall layout.
+ * Two columns, master and overflow.
+ * Can increase the number of windows that are in master,
+ * and can also shift the seperator between the columns.
+ * Overflow is the remainder, split vertically for each window.
+*/
 pub struct TallLayout {
-    //How many splits there are.
-    pub columns: u16,
-    pub master: Vec<u32>
+    //How many windows are in the master column.
+    pub master: u16,
+    //Percent of the screen that master takes up
+    pub percent: f32
 }
 
 impl Layout for TallLayout {
     fn apply(&self, screen: u32, xserv: &mut XServer, work: &mut Workspace, config: &mut Config){
         let mut wind = &mut work.windows.cards[..];
         let (x,y) = (xserv.width(screen as u32) as usize,xserv.height(screen as u32) as usize);
-
-        let mut col = clamp(1,self.columns as usize,wind.len());
-        let mcol = (col-1); //I use this a lot
-        println!("Col: {}",col);
-        for c in 0..mcol {
-            println!("Applying layout to window {} (master)",c);
-            let ref mut w = wind[c];
-            w.x = ((x/col)*c) as isize;
-            w.y = 0;
-            w.size = ((x/col) as usize,y);
+        let mast = clamp(0,self.master as usize,wind.len());
+        println!("Master: {} {}",mast,self.master);
+        if wind.len() == 0 {
+            println!("Empty window stack");
+            return;
+        }
+        let mut mast_size = clamp(0,
+                              ((x as f32)*(self.percent/100.0)).floor() as usize,
+                              x);
+        let mut leftover = x-mast_size;
+        if wind.len()<=mast { //Don't show a gap if we have no overflow
+            leftover = 0;
+            mast_size = x;
+        }
+        else if mast == 0 { //Or if we have no master
+            mast_size = 0;
+            leftover = x;
+        }
+        for m in 0..mast {
+            println!("Applying layout to window {} (master)",m);
+            let ref mut w = wind[m];
+            w.x = 0;
+            w.y = ((y/mast)*m) as isize;
+            w.size = (mast_size as usize,(y/mast) as usize);
             xserv.refresh(w);
         }
-        if wind.len()-mcol as usize > 0 {
-            let stack = wind.len()-mcol as usize;
-            for r in mcol..wind.len() {
+        if wind.len()-mast as usize > 0 {
+            let stack = wind.len()-mast as usize;
+            for r in mast..wind.len() {
                 println!("Appling layout to window {}",r);
                 let ref mut w = wind[r as usize];
-                w.x = ((x/col)*mcol) as isize;
-                w.y = ((y/(stack))*(r-mcol)) as isize;
-                w.size = ((x/col) as usize,(y/stack) as usize);
+                w.x = mast_size as isize;
+                w.y = ((y/stack)*(r-mast)) as isize;
+                w.size = (leftover as usize,(y/stack) as usize);
                 xserv.refresh(w);
             }
         }
@@ -95,13 +114,25 @@ impl Layout for TallLayout {
 
     fn special(&mut self, dir: Direction){
         match dir {
-            Direction::Forward => if self.columns < 5 {
-                self.columns+=1;
+            //These are technically backwards...
+            //Just imagine it as "subtracting" from the overflow?
+            Direction::Down => if self.master < 5 {
+                self.master+=1;
             },
-            Direction::Backward => if self.columns > 0 {
-                self.columns-=1;
+            Direction::Up => if self.master > 0 {
+                self.master-=1;
             },
-            _ => ()
+            //FIXME: this should be under Grow/Shrink!
+            Direction::Backward => {
+                if self.percent > 5.0 {
+                    self.percent = (self.percent - 5.0).floor();
+                }
+            },
+            Direction::Forward => {
+                if self.percent < 95.0 {
+                    self.percent = (self.percent + 5.0).floor();
+                }
+            }
         }
     }
 

@@ -1,6 +1,6 @@
 use super::Gallium;
 use xserver::{XServer,XWindow,Display,Screen,XDefaultScreenOfDisplay};
-use layout::{Layout,Layouts,TallLayout,HolderLayout};
+use layout::{Layout,Layouts,TallLayout,HolderLayout,LayoutFactory};
 use config::{Config,ConfigLock};
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -134,13 +134,9 @@ impl<'a> WindowManager<'a> {
             XFree(screens_);
         }*/
         let wind_deck = Deck::new();
-        let lay = TallLayout {
-            columns: 2,
-            master: Vec::new()
-        };
         let work = Workspace {
             windows: wind_deck,
-            layout: Box::new(lay),
+            layout: LayoutFactory(Layouts::Tall),
             master: None
         };
         works.push(work);

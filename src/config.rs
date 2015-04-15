@@ -154,8 +154,10 @@ fn default() -> Config {
             KeyBind::new("K-S-Left",Message::Bring(Backward)),
 
             KeyBind::new("K-Return",Message::Master),
-            KeyBind::new("K-comma",Message::Special(Backward)),
-            KeyBind::new("K-period",Message::Special(Forward)),
+            KeyBind::new("K-m",Message::Special(Backward)),
+            KeyBind::new("K-comma",Message::Special(Down)),
+            KeyBind::new("K-period",Message::Special(Up)),
+            KeyBind::new("K-slash",Message::Special(Forward)),
         ),
     }
 }
