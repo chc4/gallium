@@ -1,14 +1,13 @@
 extern crate xlib;
-extern crate serialize;
-use std::os::homedir;
+extern crate rustc_serialize;
+use std::env::home_dir;
 use std::sync::RwLock;
 use rustc_serialize::{Encodable,Decodable,json,Encoder,Decoder};
-use serialize::Decoder as StdDecoder;
-use std::old_io::{File,Open,Truncate,ReadWrite,Reader,Writer};
-use std::old_path::{Path,GenericPath};
+use rustc_serialize::Decoder as StdDecoder;
+use std::io::{Read,Write};
+use std::fs::OpenOptions;
 use key::Key;
 use xserver::XServer;
-use std::ffi::CString;
 use self::Direction::*;
 // Common configuration options for the window manager.
 
@@ -165,9 +164,14 @@ fn default() -> Config {
 impl Config {
     /// Create the Config from a json file
     pub fn initialize() -> Config {
-        let path = Path::new(CString::from_slice(format!("{}/.galliumrc", homedir().unwrap().as_str().unwrap()).as_bytes()));
-        let mut conf_file = File::open_mode(&path,Open,ReadWrite).unwrap();
-        let dec_conf = match json::decode(&conf_file.read_to_string().unwrap()[..]) {
+        let mut path = home_dir().unwrap();
+        path.set_file_name(".galliumrc");
+        let mut fopt = OpenOptions::new();
+        fopt.write(true).read(true);
+        let mut conf_file = fopt.open(path).unwrap();
+        let mut buff = String::new();
+        conf_file.read_to_string(&mut buff);
+        let dec_conf = match json::decode(&buff) {
             Ok(v) => v,
             Err(e) =>{
                         println!("Our config is corrupted!");
@@ -204,16 +208,18 @@ impl Config {
     pub fn reset(&mut self){
         //Let's just roll back to the default
         //conf_file.truncate(0);
-        let path = Path::new(CString::from_slice(format!("{}/.galliumrc", homedir().unwrap().as_str().unwrap()).as_bytes()));
-        let mut conf_file = File::open_mode(&path,Truncate,ReadWrite).unwrap();
+        let mut path = home_dir().unwrap();
+        path.set_file_name(".galliumrc");
+        let mut fopt = OpenOptions::new();
+        fopt.read(true).write(true).truncate(true);
+        let mut conf_file = fopt.open(path).unwrap();
         let mut buff = String::new();
         {
             let mut pretty = json::Encoder::new_pretty(&mut buff);
             (&default()).encode(&mut pretty).unwrap();
         }
-        //conf_file.write_str(&json::encode::<Config>(&default()).unwrap()[..]);
-        conf_file.write_str(&buff[..]);
-        conf_file.fsync();
+        conf_file.write(&buff.into_bytes());
+        conf_file.sync_data();
     }
 
     //Wrap a config in a RWLock

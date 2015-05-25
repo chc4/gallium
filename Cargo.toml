@@ -10,5 +10,11 @@ git = "https://github.com/servo/rust-xlib.git"
 [dependencies.rustc-serialize]
 rustc-serialize = "0.2.8"
 
+[dependencies.log]
+log = "*"
+
+[dependencies]
+bitflags = "0.1"
+
 [[bin]]
 name = "gallium"

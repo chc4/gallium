@@ -32,7 +32,7 @@ pub trait Layout {
     }
 }
 
-#[derive(Copy,PartialEq)]
+#[derive(Clone,Copy,PartialEq)]
 pub enum Layouts {
     Tall,
     Wide,

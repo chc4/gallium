@@ -63,7 +63,7 @@ impl Key {
                 flag = flag | serv.kommand_mod.borrow().unwrap().bits();
             }
             else {
-                match LOOKUP.position_elem(&full.as_slice()) {
+                match LOOKUP.position_elem(&&full[..]) {
                     Some(v) => {
                         flag = flag | 1<<v;
                     },

@@ -1,8 +1,7 @@
-#![feature(rustc_private,os,old_path,std_misc,old_io,collections,libc,core)]
+#![feature(collections,libc)]
 #[macro_use] extern crate log;
 extern crate rustc_serialize;
-#[macro_use] extern crate rustc_bitflags;
-extern crate serialize;
+#[macro_use] extern crate bitflags;
 extern crate xlib;
 extern crate libc;
 use config::{Message,Config,ConfigLock,Direction};
@@ -85,7 +84,7 @@ impl<'a> Gallium<'a> {
                     Message::Terminal => {
                         println!("Spawning terminal...");
                         let (term,args) = self.config.current().terminal.clone();
-                        let (term,args) = (term.as_slice(),args.as_slice());
+                        let (term,args) = (&term,&args);
                         let mut c = Command::new(term);
                         if args.len()>0 {
                             let co = c.arg(args);
@@ -174,7 +173,7 @@ impl<'a> Gallium<'a> {
 
 fn main(){
     let gl = Gallium::setup();
-    for argument in std::os::args().iter() {
+    for argument in std::env::args() {
         println!("{}", argument);
         if argument[..].eq("--revert") {
             Config::reset(&mut gl.config.current());
