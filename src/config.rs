@@ -165,9 +165,10 @@ impl Config {
     /// Create the Config from a json file
     pub fn initialize() -> Config {
         let mut path = home_dir().unwrap();
-        path.set_file_name(".galliumrc");
+        path.push(".galliumrc");
         let mut fopt = OpenOptions::new();
         fopt.write(true).read(true);
+        println!("{}",path.display());
         let mut conf_file = fopt.open(path).unwrap();
         let mut buff = String::new();
         conf_file.read_to_string(&mut buff);
@@ -209,7 +210,7 @@ impl Config {
         //Let's just roll back to the default
         //conf_file.truncate(0);
         let mut path = home_dir().unwrap();
-        path.set_file_name(".galliumrc");
+        path.push(".galliumrc");
         let mut fopt = OpenOptions::new();
         fopt.read(true).write(true).truncate(true);
         let mut conf_file = fopt.open(path).unwrap();
