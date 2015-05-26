@@ -131,8 +131,10 @@ is super hotswappable and happy. Yaay.
 fn default() -> Config {
     Config {
         kommand: KeyBind::new("M4-",Message::None),
+        // The dead-space from the borders of the screen
         padding: 5,
         border: 3,
+        // The blank-space in between tiled windows
         spacing: 5,
         terminal: ("urxvt".to_string(), "".to_string()),
         keys: vec!(

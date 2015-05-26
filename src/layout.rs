@@ -2,6 +2,8 @@ use xserver::{XServer};
 use super::Gallium;
 use window_manager::{Deck,Workspace,Window};
 use config::{Config,Direction};
+extern crate core;
+use self::core::ops::IndexMut;
 
 //Why is this not provided by the stdlib?
 fn clamp<T: Ord>(min: T, v: T, max:T) -> T {
@@ -15,6 +17,14 @@ fn clamp<T: Ord>(min: T, v: T, max:T) -> T {
         return max
     }
     v
+}
+
+//Accumulator-ish region, to keep current position book-keeping for layouts
+struct Region {
+    x: usize,
+    y: usize,
+    size_x: usize,
+    size_y: usize
 }
 
 pub trait Layout {
@@ -72,41 +82,58 @@ pub struct TallLayout {
 impl Layout for TallLayout {
     fn apply(&self, screen: u32, xserv: &mut XServer, work: &mut Workspace, config: &mut Config){
         let mut wind = &mut work.windows.cards[..];
-        let (x,y) = (xserv.width(screen as u32) as usize,xserv.height(screen as u32) as usize);
+        let pad = config.padding as usize;
+        let (x,y) = (xserv.width(screen as u32) as usize - pad - pad,
+                    xserv.height(screen as u32) as usize - pad - pad);
+        let space = config.spacing as usize;
         let mast = clamp(0,self.master as usize,wind.len());
         println!("Master: {} {}",mast,self.master);
         if wind.len() == 0 {
             println!("Empty window stack");
             return;
         }
-        let mut mast_size = clamp(0,
+        let mut mast_size = clamp(space,
                               ((x as f32)*(self.percent/100.0)).floor() as usize,
-                              x);
-        let mut leftover = x-mast_size;
+                              x) - space;
+        let mut leftover = x-(mast_size+space);
         if wind.len()<=mast { //Don't show a gap if we have no overflow
             leftover = 0;
             mast_size = x;
         }
         else if mast == 0 { //Or if we have no master
-            mast_size = 0;
+            mast_size = pad-space; //This is a hack. We can't have a space!
             leftover = x;
         }
+        let mut reg = Region { x: pad, y: pad, size_x: mast_size, size_y: y };
         for m in 0..mast {
-            println!("Applying layout to window {} (master)",m);
-            let ref mut w = wind[m];
-            w.x = 0;
-            w.y = ((y/mast)*m) as isize;
-            w.size = (mast_size as usize,(y/mast) as usize);
+            let ref mut w = wind.index_mut(m);
+            //We are already offset by pad, dont need another space if we are the top
+            let kill_s = if m==0 || m==(mast) { 0 } else { space };
+            //If the spacing doesn't divide evenly, stretch the top's Y
+            let size_extra = if m==0 { (reg.size_y-(mast*space))%mast } else { 0 }; //Terrible
+            let wind_y = (reg.size_y/mast) - kill_s + size_extra;
+            reg.y = reg.y + kill_s;
+            w.x = reg.x as isize;
+            w.y = reg.y as isize;
+            w.size = (reg.size_x as usize, wind_y as usize);
+            reg.y = reg.y + wind_y;
             xserv.refresh(w);
         }
-        if wind.len()-mast as usize > 0 {
-            let stack = wind.len()-mast as usize;
-            for r in mast..wind.len() {
-                println!("Appling layout to window {}",r);
+        
+        let mut reg = Region { x: (x-leftover)+space, y: pad, size_x: leftover, size_y: y };
+        let wlen = wind.len();
+        if wlen-mast as usize > 0 {
+            let stack = wlen-mast as usize;
+            for r in mast..wlen {
                 let ref mut w = wind[r as usize];
-                w.x = mast_size as isize;
-                w.y = ((y/stack)*(r-mast)) as isize;
-                w.size = (leftover as usize,(y/stack) as usize);
+                let kill_s = if r==mast || r==(wlen) { 0 } else { space };
+                let size_extra = if r==mast { (reg.size_y-(stack*space))%stack } else { 0 }; //Terrible
+                let wind_y = (reg.size_y/stack) - kill_s + size_extra;
+                reg.y = reg.y + kill_s;
+                w.x = reg.x as isize;
+                w.y = reg.y as isize;
+                w.size = (reg.size_x as usize,wind_y as usize);
+                reg.y = reg.y + wind_y;
                 xserv.refresh(w);
             }
         }

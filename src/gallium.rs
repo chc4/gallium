@@ -1,4 +1,4 @@
-#![feature(collections,libc)]
+#![feature(collections,libc,core)]
 #[macro_use] extern crate log;
 extern crate rustc_serialize;
 #[macro_use] extern crate bitflags;
