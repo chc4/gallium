@@ -83,8 +83,11 @@ pub struct Config {
     kommand: KeyBind,
     pub terminal: (String,String),
     pub padding: u16,
-    pub border: u16,
+    pub border: u32,
     pub spacing: u16,
+    pub follow_mouse: bool,
+    pub focus_color: u32,
+    pub unfocus_color: u32,
     pub keys: Vec<KeyBind>,
 }
 pub struct ConfigLock {
@@ -136,6 +139,12 @@ fn default() -> Config {
         border: 3,
         // The blank-space in between tiled windows
         spacing: 5,
+        // If window focus should follow your mouse cursor or not
+        follow_mouse: true,
+        // Border color for the focused window
+        focus_color: 0x3DAFDC,
+        // ...and for unfocused ones
+        unfocus_color: 0x282828,
         terminal: ("urxvt".to_string(), "".to_string()),
         keys: vec!(
             KeyBind::new("K-S-Return",Message::Terminal),

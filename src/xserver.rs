@@ -75,6 +75,7 @@ pub enum ServerEvent {
     KeyPress(Key),
     MapRequest(GWindow),
     DestroyNotify(Window),
+    EnterNotify(Window),
     Unknown
 }
 
@@ -99,7 +100,7 @@ impl XServer {
         }
         debug!("XServer display: {:?}",disp);
         let root = XRootWindow(disp, screen_num);
-        XSelectInput(disp,root,(SubstructureNotifyMask|SubstructureRedirectMask|FocusChangeMask).bits());
+        XSelectInput(disp,root,(SubstructureNotifyMask|SubstructureRedirectMask|FocusChangeMask|EnterWindowMask|LeaveWindowMask).bits());
         XSync(disp,1);
         XServer {
             display: disp,
@@ -107,6 +108,24 @@ impl XServer {
             event: malloc(256) as *mut XEvent,//unsafe { *malloc(size_of::<XEvent>() as *const XEvent) }, //Stolen from wtftw(ish)
             keys: Vec::new(),
             kommand_mod: RefCell::new(None)
+        }
+    }
+
+    pub fn focus(&mut self, wind: Window) {
+        unsafe {
+            XSetInputFocus(self.display,wind,2 /*RevertToParent*/,0 /*CurrentTime*/);
+        }
+    }
+
+    pub fn set_border_width(&mut self, wind: Window, width: u32) {
+       unsafe {
+           XSetWindowBorderWidth(self.display,wind,width);
+        }
+    }
+
+    pub fn set_border_color(&mut self, wind: Window, color: c_ulong) {
+        unsafe {
+            XSetWindowBorder(self.display,wind,color);
         }
     }
 
@@ -225,6 +244,10 @@ impl XServer {
                 //ServerEvent::KeyPress(ev.keycode,m)
                 let k = Key::parse(ev.keycode as KeyCode,ev.state,self);
                 ServerEvent::KeyPress(k)
+            },
+            xevent::EnterNotify => unsafe {
+                let ev = self.get_event_as::<XEnterWindowEvent>();
+                ServerEvent::EnterNotify(ev.window)
             },
             xevent::MapRequest => unsafe {
                 let ev = self.get_event_as::<XMapRequestEvent>();

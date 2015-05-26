@@ -45,10 +45,12 @@ impl<'a> Gallium<'a> {
                     let mut w = self.window_manager.workspaces.current().unwrap();
                     let screen = self.window_manager.screens.index.unwrap() as u32;
                     let p = window.wind_ptr;
+                    let conf = self.config.current();
                     w.layout.add(&mut window);
                     w.windows.push(window);
                     self.window_server.map(p);
-                    w.refresh(&mut self.window_server, screen, self.config.current());
+                    self.window_server.set_border_width(p,conf.border);
+                    w.refresh(&mut self.window_server, screen, conf);
                 },
                 ServerEvent::KeyPress(key) => {
                     self.dispatch_key(key);
@@ -64,6 +66,21 @@ impl<'a> Gallium<'a> {
                                 work.refresh(&mut self.window_server, screen, self.config.current());
                                 break;
                             }
+                        }
+                    }
+                },
+                ServerEvent::EnterNotify(wind_ptr) => {
+                    let conf = self.config.current();
+                    if conf.follow_mouse == false {
+                        continue;
+                    }
+                    let screen = self.window_manager.screens.index.unwrap() as u32;
+                    let mut work = self.window_manager.workspaces.current().unwrap();
+                    for wind_ind in 0..work.windows.cards.len() {
+                        if work.windows.cards[wind_ind].wind_ptr == wind_ptr {
+                            work.windows.select(wind_ind);
+                            work.refresh(&mut self.window_server, screen, conf);
+                            break;
                         }
                     }
                 },

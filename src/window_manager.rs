@@ -98,6 +98,16 @@ impl<'a> Workspace<'a>{
         holder.apply(screen, xserv, self, &mut config);
         //And restore it
         swap(&mut self.layout, &mut holder);
+        let mast = self.windows.current().map(|x| x.wind_ptr );
+        for w in &self.windows.cards[..] {
+            if mast.is_some() && w.wind_ptr == mast.unwrap() {
+                xserv.set_border_color(w.wind_ptr,config.focus_color as u64);
+                xserv.focus(w.wind_ptr);
+            }
+            else {
+                xserv.set_border_color(w.wind_ptr,config.unfocus_color as u64);
+            }
+        }
     }
 }
 
