@@ -1,4 +1,4 @@
-#![feature(collections,libc,core)]
+#![feature(collections,libc,core,slice_position_elem)]
 #[macro_use] extern crate log;
 extern crate rustc_serialize;
 #[macro_use] extern crate bitflags;
@@ -175,9 +175,9 @@ impl<'a> Gallium<'a> {
                         }
                         work.refresh(&mut self.window_server, screen, self.config.current());
                     },
-                    Message::Special(dir) => {
+                    Message::Special(msg) => {
                         let mut work = self.window_manager.workspaces.current().unwrap();
-                        work.layout.special(dir);
+                        work.layout.special(msg);
                         work.refresh(&mut self.window_server, screen, self.config.current());
                     },
                     Message::None => (),

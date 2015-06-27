@@ -8,6 +8,7 @@ use std::io::{Read,Write};
 use std::fs::OpenOptions;
 use key::Key;
 use xserver::XServer;
+use layout::{LayoutFactory,Layouts};
 use self::Direction::*;
 // Common configuration options for the window manager.
 
@@ -15,8 +16,16 @@ use self::Direction::*;
 pub enum Direction {
     Backward,
     Forward,
-    Up, //Generally unused, but if I ever want 2d-array workspaces...
+    Up,
     Down
+}
+// Special messages, for handling/ignore with layout.special
+#[derive(Clone,RustcDecodable,RustcEncodable)]
+pub enum SpecialMsg {
+    Grow,
+    Shrink,
+    Add,
+    Subtract
 }
 #[derive(Clone,RustcDecodable,RustcEncodable)]
 pub enum Message {
@@ -25,14 +34,15 @@ pub enum Message {
     Reload,
     Quit,
     Kill,
-    Shrink,
-    Grow,
     Focus(Direction),
     Translate(Direction),
+    Resize(Direction),
+    Move(Direction),
     Switch(Direction),
     Bring(Direction),
     Master,
-    Special(Direction),
+    Special(SpecialMsg),
+    Chain(Vec<Message>),
     None,
 }
 
@@ -41,6 +51,12 @@ pub struct KeyBind {
     pub binding: Option<Key>,
     pub chord: String,
     pub message: Message
+}
+
+#[derive(Clone,RustcEncodable,RustcDecodable)]
+pub struct WorkspaceConf {
+    pub name: String,
+    pub layout: Layouts,
 }
 
 impl KeyBind {
@@ -88,6 +104,7 @@ pub struct Config {
     pub follow_mouse: bool,
     pub focus_color: u32,
     pub unfocus_color: u32,
+    pub workspaces: Vec<WorkspaceConf>,
     pub keys: Vec<KeyBind>,
 }
 pub struct ConfigLock {
@@ -146,13 +163,18 @@ fn default() -> Config {
         // ...and for unfocused ones
         unfocus_color: 0x282828,
         terminal: ("urxvt".to_string(), "".to_string()),
+        workspaces: vec!(
+            WorkspaceConf { name: "|".to_string(), layout: Layouts::Tall },
+            WorkspaceConf { name: "||".to_string(), layout: Layouts::Full },
+        ),
         keys: vec!(
+            // This should really just be Message:Spawn("urxvt","")
             KeyBind::new("K-S-Return",Message::Terminal),
             KeyBind::new("K-q",Message::Reload),
             KeyBind::new("K-S-q",Message::Quit),
             KeyBind::new("K-x",Message::Kill),
-            KeyBind::new("K-j",Message::Shrink),
-            KeyBind::new("K-semicolon",Message::Grow),
+            KeyBind::new("K-j",Message::Special(SpecialMsg::Shrink)),
+            KeyBind::new("K-semicolon",Message::Special(SpecialMsg::Grow)),
             KeyBind::new("K-k",Message::Focus(Forward)),
             KeyBind::new("K-l",Message::Focus(Backward)),
             KeyBind::new("K-S-k",Message::Translate(Forward)),
@@ -164,10 +186,19 @@ fn default() -> Config {
             KeyBind::new("K-S-Left",Message::Bring(Backward)),
 
             KeyBind::new("K-Return",Message::Master),
-            KeyBind::new("K-m",Message::Special(Backward)),
-            KeyBind::new("K-comma",Message::Special(Down)),
-            KeyBind::new("K-period",Message::Special(Up)),
-            KeyBind::new("K-slash",Message::Special(Forward)),
+            KeyBind::new("K-plus",Message::Special(SpecialMsg::Add)),
+            KeyBind::new("K-equal",Message::Special(SpecialMsg::Subtract)),
+
+            // For easy rearranging of floating windows
+            KeyBind::new("K-m",Message::Resize(Backward)),
+            KeyBind::new("K-comma",Message::Resize(Down)),
+            KeyBind::new("K-period",Message::Resize(Up)),
+            KeyBind::new("K-slash",Message::Resize(Forward)),
+            KeyBind::new("K-S-m",Message::Move(Backward)),
+            KeyBind::new("K-S-comma",Message::Move(Down)),
+            KeyBind::new("K-S-period",Message::Move(Up)),
+            KeyBind::new("K-S-slash",Message::Move(Forward)),
+
         ),
     }
 }

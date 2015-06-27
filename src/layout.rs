@@ -1,7 +1,7 @@
 use xserver::{XServer};
 use super::Gallium;
 use window_manager::{Deck,Workspace,Window};
-use config::{Config,Direction};
+use config::{Config,Direction,SpecialMsg};
 extern crate core;
 use self::core::ops::IndexMut;
 
@@ -37,12 +37,12 @@ pub trait Layout {
     fn remove(&mut self, usize){
         println!("Layout.remove unimplemented");
     }
-    fn special(&mut self, Direction){
+    fn special(&mut self, SpecialMsg){
         println!("Layout.special unimplemented");
     }
 }
 
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone,Copy,PartialEq,RustcDecodable,RustcEncodable)]
 pub enum Layouts {
     Tall,
     Wide,
@@ -87,7 +87,6 @@ impl Layout for TallLayout {
                     xserv.height(screen as u32) as usize - pad - pad);
         let space = config.spacing as usize;
         let mast = clamp(0,self.master as usize,wind.len());
-        println!("Master: {} {}",mast,self.master);
         if wind.len() == 0 {
             println!("Empty window stack");
             return;
@@ -119,7 +118,7 @@ impl Layout for TallLayout {
             reg.y = reg.y + wind_y;
             xserv.refresh(w);
         }
-        
+
         let mut reg = Region { x: (x-leftover)+space, y: pad, size_x: leftover, size_y: y };
         let wlen = wind.len();
         if wlen-mast as usize > 0 {
@@ -139,23 +138,22 @@ impl Layout for TallLayout {
         }
     }
 
-    fn special(&mut self, dir: Direction){
-        match dir {
+    fn special(&mut self, msg: SpecialMsg){
+        match msg {
             //These are technically backwards...
             //Just imagine it as "subtracting" from the overflow?
-            Direction::Down => if self.master < 5 {
+            SpecialMsg::Add => if self.master < 5 {
                 self.master+=1;
             },
-            Direction::Up => if self.master > 0 {
+            SpecialMsg::Subtract => if self.master > 0 {
                 self.master-=1;
             },
-            //FIXME: this should be under Grow/Shrink!
-            Direction::Backward => {
+            SpecialMsg::Shrink => {
                 if self.percent > 5.0 {
                     self.percent = (self.percent - 5.0).floor();
                 }
             },
-            Direction::Forward => {
+            SpecialMsg::Grow => {
                 if self.percent < 95.0 {
                     self.percent = (self.percent + 5.0).floor();
                 }
