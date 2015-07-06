@@ -31,10 +31,10 @@ pub trait Layout {
     fn apply(&self, screen: u32, xserv: &mut XServer, work: &mut Workspace, conf: &mut Config){
         println!("Layout.apply unimplemented");
     }
-    fn add(&mut self, &mut Window){
+    fn add(&mut self, &mut Window, xserv: &mut XServer){
         println!("Layout.add unimplemented");
     }
-    fn remove(&mut self, usize){
+    fn remove(&mut self, usize, xserv: &mut XServer){
         println!("Layout.remove unimplemented");
     }
     fn special(&mut self, SpecialMsg){
@@ -87,6 +87,7 @@ impl Layout for TallLayout {
                     xserv.height(screen as u32) as usize - pad - pad);
         let space = config.spacing as usize;
         let mast = clamp(0,self.master as usize,wind.len());
+        println!("Master {}",mast);
         if wind.len() == 0 {
             println!("Empty window stack");
             return;
@@ -140,8 +141,6 @@ impl Layout for TallLayout {
 
     fn special(&mut self, msg: SpecialMsg){
         match msg {
-            //These are technically backwards...
-            //Just imagine it as "subtracting" from the overflow?
             SpecialMsg::Add => if self.master < 5 {
                 self.master+=1;
             },
@@ -161,10 +160,30 @@ impl Layout for TallLayout {
         }
     }
 
-    fn add(&mut self, wind: &mut Window){
+    fn add(&mut self, wind: &mut Window, xserv: &mut XServer){
         println!("Added a new window, yaaay");
+        xserv.map(wind.wind_ptr);
     }
-    fn remove(&mut self, ind: usize){
+    fn remove(&mut self, ind: usize, xserv: &mut XServer){
         println!("Removed window {}, oh nooo",ind);
+    }
+}
+
+pub struct FullLayout {
+    reg: Region
+}
+
+impl Layout for FullLayout {
+    fn apply(&self, scrren: u32, xserv: &mut XServer, work: &mut Workspace, conf: &mut Config){
+    
+    }
+    fn add(&mut self, wind: &mut Window, xserv: &mut XServer){
+        println!("Layout.add unimplemented");
+    }
+    fn remove(&mut self, ind: usize, xserv: &mut XServer){
+        println!("Layout.remove unimplemented");
+    }
+    fn special(&mut self, msg: SpecialMsg){
+        println!("Layout.special unimplemented");
     }
 }

@@ -153,7 +153,7 @@ fn default() -> Config {
         kommand: KeyBind::new("M4-",Message::None),
         // The dead-space from the borders of the screen
         padding: 5,
-        border: 3,
+        border: 1,
         // The blank-space in between tiled windows
         spacing: 5,
         // If window focus should follow your mouse cursor or not
@@ -186,8 +186,8 @@ fn default() -> Config {
             KeyBind::new("K-S-Left",Message::Bring(Backward)),
 
             KeyBind::new("K-Return",Message::Master),
-            KeyBind::new("K-plus",Message::Special(SpecialMsg::Add)),
-            KeyBind::new("K-equal",Message::Special(SpecialMsg::Subtract)),
+            KeyBind::new("K-minus",Message::Special(SpecialMsg::Subtract)),
+            KeyBind::new("K-equal",Message::Special(SpecialMsg::Add)),
 
             // For easy rearranging of floating windows
             KeyBind::new("K-m",Message::Resize(Backward)),

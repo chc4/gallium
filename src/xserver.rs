@@ -141,9 +141,19 @@ impl XServer {
             XMapWindow(self.display,wind);
         }
     }
-
-    pub fn refresh(&mut self,gwind: &GWindow){
+    pub fn unmap(&mut self,wind: Window){
         unsafe {
+            XUnmapWindow(self.display,wind);
+        }
+    }
+
+    pub fn refresh(&mut self,gwind: &mut GWindow){
+        unsafe {
+            if gwind.mapped == false {
+                println!("Refreshed an unmapped window, remapping it");
+                self.map(gwind.wind_ptr);
+                gwind.mapped = true;
+            }
             let (s_x,s_y) = gwind.size;
             XMoveResizeWindow(self.display, gwind.wind_ptr, gwind.x as i32, gwind.y as i32, s_x as u32, s_y as u32);
         }
@@ -254,6 +264,7 @@ impl XServer {
                 println!("Window added {}",ev.window);
                 let w = GWindow {
                    wind_ptr: ev.window,
+                   mapped: false,
                    x: 0,
                    y: 0,
                    z: 0,
@@ -301,8 +312,8 @@ impl XServer {
             let mut x = CString::new((*s.as_mut_vec()).clone()).unwrap();
             let sym = XStringToKeysym(x.as_ptr() as *mut i8);
             if sym == 0 { //Invalid string!
-                //println!("{} is an invalid X11 keysym!",s);
-                panic!(format!("{} is an invalid X11 keysym!",s));
+                println!("{} is an invalid X11 keysym!",s);
+                //panic!(format!("{} is an invalid X11 keysym!",s));
             }
             sym
         }

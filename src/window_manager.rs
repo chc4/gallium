@@ -56,7 +56,8 @@ impl<T> Deck<T>{
     //This is O(n) and re-allocates everything right of the index. It's bad.
     pub fn remove(&mut self,ind: usize) -> Option<T> {
         let k = self.cards.remove(ind);
-        if self.index.is_some() && self.index.unwrap() >= ind {
+        // If we can avoid nuking index, then just select the next one in line
+        if self.index.is_some() && self.index.unwrap() >= ind && self.cards.len() <= self.index.unwrap()  {
             self.index = None
         }
         Some(k)
@@ -113,6 +114,7 @@ impl<'a> Workspace<'a>{
 
 pub struct Window {
     pub wind_ptr: XWindow,
+    pub mapped: bool, //not always true! just used with xserv.refresh(window)
     pub x: isize,
     pub y: isize,
     pub z: isize,
@@ -159,6 +161,23 @@ impl<'a> WindowManager<'a> {
             screens: screens,
             workspaces: works
         }
+    }
+    pub fn switch(&mut self, xserv: &mut XServer, mut config: Config, ind: u32) {
+        // All of these unwraps should be safe, we will never be at an empty workspace
+        if ind as usize >= self.workspaces.cards.len() {
+            panic!("Invalid workspace {} to switch to",ind);
+        }
+        //First, unmap all current windows
+        for w in self.workspaces.current().unwrap().windows.cards.iter_mut() {
+            xserv.unmap(w.wind_ptr);
+            w.mapped = false;
+        }
+        //Switch workspaces
+        self.workspaces.select(ind as usize);
+        //And finally let the layout remap all the ones that it wants
+        //(The layout shouldn't have to do anything fancy, since
+        // xserv.refresh(window) will map the window)
+        self.workspaces.current().unwrap().refresh(xserv,self.screens.index.unwrap() as u32,config);
     }
 }
 

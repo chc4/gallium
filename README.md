@@ -12,3 +12,13 @@ The bar will probably just be a plug-n-play bar, with the WM exporting the curre
 
 Config will be hotswappable, and probably the entire WM as well. The config will just be in JSON format since there is already a nice serializer for it in place.
 Keybinds are in Emac's format since it's an easy way to say them. M4-r means "the windowss key+r". You can add as many modifiers as you want ("S-","Lock-","C-","M-","M2-","M3-","M4-","M5-" are the options, plus a "K-" modifier that stands for the config-defined prefix. Shift, Lock, Control, Meta(alt), Meta2-5, Kommand.) All keybinds will be defined this way, and reloadable from the config file.
+
+Still to come:
+* Better debug than just println! pls
+* Switching workspaces and sending windows between them
+* Floating window support
+* Better serialization of colors, including referencing your terminal colors instead
+* More layout implementations (including hopefully a BSP mode!)
+* The ability to reload the WM without killing all your windows
+* Per-window tweaks
+* Bar support

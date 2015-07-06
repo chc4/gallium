@@ -46,9 +46,8 @@ impl<'a> Gallium<'a> {
                     let screen = self.window_manager.screens.index.unwrap() as u32;
                     let p = window.wind_ptr;
                     let conf = self.config.current();
-                    w.layout.add(&mut window);
+                    w.layout.add(&mut window, &mut self.window_server);
                     w.windows.push(window);
-                    self.window_server.map(p);
                     self.window_server.set_border_width(p,conf.border);
                     w.refresh(&mut self.window_server, screen, conf);
                 },
@@ -61,7 +60,7 @@ impl<'a> Gallium<'a> {
                         for wind_ind in 0..work.windows.cards.len() {
                             if work.windows.cards[wind_ind].wind_ptr == wind_ptr {
                                 println!("Window {} removed from Workspace",wind_ind);
-                                work.layout.remove(wind_ind);
+                                work.layout.remove(wind_ind, &mut self.window_server);
                                 work.windows.remove(wind_ind);
                                 work.refresh(&mut self.window_server, screen, self.config.current());
                                 break;
@@ -78,6 +77,7 @@ impl<'a> Gallium<'a> {
                     let mut work = self.window_manager.workspaces.current().unwrap();
                     for wind_ind in 0..work.windows.cards.len() {
                         if work.windows.cards[wind_ind].wind_ptr == wind_ptr {
+                            println!("Moused over window {}",wind_ptr);
                             work.windows.select(wind_ind);
                             work.refresh(&mut self.window_server, screen, conf);
                             break;
