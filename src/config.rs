@@ -12,40 +12,6 @@ use layout::{LayoutFactory,Layouts};
 use self::Direction::*;
 // Common configuration options for the window manager.
 
-#[derive(Clone,RustcDecodable,RustcEncodable)]
-pub enum Direction {
-    Backward,
-    Forward,
-    Up,
-    Down
-}
-// Special messages, for handling/ignore with layout.special
-#[derive(Clone,RustcDecodable,RustcEncodable)]
-pub enum SpecialMsg {
-    Grow,
-    Shrink,
-    Add,
-    Subtract
-}
-#[derive(Clone,RustcDecodable,RustcEncodable)]
-pub enum Message {
-    Spawn(String,String),
-    Terminal,
-    Reload,
-    Quit,
-    Kill,
-    Focus(Direction),
-    Translate(Direction),
-    Resize(Direction),
-    Move(Direction),
-    Switch(Direction),
-    Bring(Direction),
-    Master,
-    Special(SpecialMsg),
-    Chain(Vec<Message>),
-    None,
-}
-
 #[derive(Clone)]
 pub struct KeyBind {
     pub binding: Option<Key>,
@@ -97,7 +63,6 @@ impl Encodable for KeyBind {
 #[derive(RustcEncodable,RustcDecodable,Clone)]
 pub struct Config {
     kommand: KeyBind,
-    pub terminal: (String,String),
     pub padding: u16,
     pub border: u32,
     pub spacing: u16,
@@ -147,7 +112,39 @@ is super hotswappable and happy. Yaay.
  * and do the actual command
  *
  * (i totally didn't steal this idea from xr3wm nope i am super original)
-*/
+*/#[derive(Clone,RustcDecodable,RustcEncodable)]
+pub enum Direction {
+    Backward,
+    Forward,
+    Up,
+    Down
+}
+// Special messages, for handling/ignore with layout.special
+#[derive(Clone,RustcDecodable,RustcEncodable)]
+pub enum SpecialMsg {
+    Grow,
+    Shrink,
+    Add,
+    Subtract
+}
+#[derive(Clone,RustcDecodable,RustcEncodable)]
+pub enum Message {
+    Spawn(String,String),
+    Reload,
+    Quit,
+    Kill,
+    Focus(Direction),
+    Translate(Direction),
+    Resize(Direction),
+    Move(Direction),
+    Switch(Direction),
+    Bring(Direction),
+    Master,
+    Special(SpecialMsg),
+    Chain(Vec<Message>),
+    None,
+}
+
 fn default() -> Config {
     Config {
         kommand: KeyBind::new("M4-",Message::None),
@@ -162,14 +159,12 @@ fn default() -> Config {
         focus_color: 0x3DAFDC,
         // ...and for unfocused ones
         unfocus_color: 0x282828,
-        terminal: ("urxvt".to_string(), "".to_string()),
         workspaces: vec!(
             WorkspaceConf { name: "|".to_string(), layout: Layouts::Tall },
             WorkspaceConf { name: "||".to_string(), layout: Layouts::Full },
         ),
         keys: vec!(
-            // This should really just be Message:Spawn("urxvt","")
-            KeyBind::new("K-S-Return",Message::Terminal),
+            KeyBind::new("K-S-Return",Message::Spawn("urxvt".to_string(),"".to_string())),
             KeyBind::new("K-q",Message::Reload),
             KeyBind::new("K-S-q",Message::Quit),
             KeyBind::new("K-x",Message::Kill),

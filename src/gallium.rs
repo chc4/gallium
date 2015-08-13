@@ -97,20 +97,7 @@ impl<'a> Gallium<'a> {
         for k in self.config.current().keys {
             if k.binding.unwrap() == key {
                 match k.message {
-                    Message::Terminal => {
-                        println!("Spawning terminal...");
-                        let (term,args) = self.config.current().terminal.clone();
-                        let (term,args) = (&term,&args);
-                        let mut c = Command::new(term);
-                        if args.len()>0 {
-                            let co = c.arg(args);
-                            co.spawn();
-                        }
-                        else {
-                            c.spawn();
-                        }
-                    },
-                    Message::Reload => {
+                   Message::Reload => {
                         self.window_server.clear_keys();
                         let mut new_conf = Config::new();
                         new_conf.setup(&mut self.window_server);
