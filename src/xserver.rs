@@ -151,7 +151,7 @@ impl XServer {
     pub fn refresh(&mut self,gwind: &mut GWindow){
         unsafe {
             if gwind.mapped == false {
-                println!("Refreshed an unmapped window, remapping it");
+                warn!("Refreshed an unmapped window, remapping it");
                 self.map(gwind.wind_ptr);
                 gwind.mapped = true;
             }
@@ -236,17 +236,17 @@ impl XServer {
     }
 
     pub fn get_event(&mut self) -> ServerEvent {
-        debug!("Calling XNextEvent");
-        debug!("disp: {:?} event: {:?}", self.display, self.event);
+        trace!("Calling XNextEvent");
+        trace!("disp: {:?} event: {:?}", self.display, self.event);
         unsafe {
             XNextEvent(self.display, self.event);
         }
-        debug!("XNextEvent passed");
+        trace!("XNextEvent passed");
         let event_type = unsafe { (*self.event)._type };
         match event_type {
             xevent::ButtonPress => unsafe {
                 let ev = self.get_event_as::<XButtonPressedEvent>();
-                println!("Pressed button {}",ev.state);
+                debug!("Pressed button {}",ev.state);
                 ServerEvent::ButtonPress((ev.x,ev.y))
             },
             xevent::KeyPress => unsafe {
@@ -262,7 +262,7 @@ impl XServer {
             },
             xevent::MapRequest => unsafe {
                 let ev = self.get_event_as::<XMapRequestEvent>();
-                println!("Window added {}",ev.window);
+                debug!("Window added {}",ev.window);
                 let w = GWindow {
                    wind_ptr: ev.window,
                    mapped: false,
@@ -275,7 +275,7 @@ impl XServer {
             },
             xevent::DestroyNotify => unsafe {
                 let ev = self.get_event_as::<XDestroyWindowEvent>();
-                println!("Window destroyed {}",ev.window);
+                debug!("Window destroyed {}",ev.window);
                 ServerEvent::DestroyNotify(ev.window)
             },
             _ => ServerEvent::Unknown

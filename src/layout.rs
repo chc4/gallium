@@ -87,9 +87,9 @@ impl Layout for TallLayout {
                     xserv.height(screen as u32) as usize - pad - pad);
         let space = config.spacing as usize;
         let mast = clamp(0,self.master as usize,wind.len());
-        println!("Master {}",mast);
+        debug!("Master {}",mast);
         if wind.len() == 0 {
-            println!("Empty window stack");
+            trace!("Empty window stack");
             return;
         }
         let mut mast_size = clamp(space,
@@ -161,11 +161,11 @@ impl Layout for TallLayout {
     }
 
     fn add(&mut self, wind: &mut Window, xserv: &mut XServer){
-        println!("Added a new window, yaaay");
+        trace!("Added a new window, yaaay");
         xserv.map(wind.wind_ptr);
     }
     fn remove(&mut self, ind: usize, xserv: &mut XServer){
-        println!("Removed window {}, oh nooo",ind);
+        trace!("Removed window {}, oh nooo",ind);
     }
 }
 

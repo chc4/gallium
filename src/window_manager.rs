@@ -92,7 +92,7 @@ pub struct Workspace<'a> {
 }
 impl<'a> Workspace<'a>{
     pub fn refresh(&mut self, xserv: &mut XServer, screen: u32, mut config: Config){
-        println!("Refresh");
+        trace!("Refresh");
         //Swap self.layout so no dual-&mut
         let mut holder: Box<Layout> = Box::new(HolderLayout);
         swap(&mut holder, &mut self.layout);

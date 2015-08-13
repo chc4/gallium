@@ -9,12 +9,14 @@ use window_manager::WindowManager;
 use xserver::{XServer,ServerEvent};
 use key::Key;
 use std::process::Command;
+use gallium_log::GalliumLog;
 
 pub mod config;
 pub mod window_manager;
 pub mod key;
 pub mod xserver;
 pub mod layout;
+pub mod gallium_log;
 
 pub struct Gallium<'a> {
     config: ConfigLock,
@@ -38,7 +40,7 @@ impl<'a> Gallium<'a> {
 
     fn start(mut self){
         loop {
-            debug!("Polling event...");
+            trace!("Polling event...");
             match self.window_server.get_event() {
                 ServerEvent::MapRequest(mut window) => {
                     //For now just adding to the current workspace
@@ -59,7 +61,7 @@ impl<'a> Gallium<'a> {
                     for mut work in &mut self.window_manager.workspaces.cards[..] {
                         for wind_ind in 0..work.windows.cards.len() {
                             if work.windows.cards[wind_ind].wind_ptr == wind_ptr {
-                                println!("Window {} removed from Workspace",wind_ind);
+                                debug!("Window {} removed from Workspace",wind_ind);
                                 work.layout.remove(wind_ind, &mut self.window_server);
                                 work.windows.remove(wind_ind);
                                 work.refresh(&mut self.window_server, screen, self.config.current());
@@ -84,21 +86,21 @@ impl<'a> Gallium<'a> {
                     }
                 },
                 _ => {
-                    println!("Fetched event");
+                    trace!("Unknown event");
                 }
             }
         }
     }
 
     fn dispatch_key(&mut self, key: Key){
-        println!("Key press:{:?}",key);
+        debug!("Key press: {:?}",key);
         //TODO: figure out how I am going to handle multi-screen
         let screen = self.window_manager.screens.index.unwrap() as u32;
         for k in self.config.current().keys {
             if k.binding.unwrap() == key {
                 match k.message {
                     Message::Spawn(exe,args) => {
-                        println!("Spawning...");
+                        info!("Spawning...");
                         let mut c = Command::new(exe);
                         if args.len()>0 {
                             let co = c.arg(args);
@@ -113,7 +115,7 @@ impl<'a> Gallium<'a> {
                         let mut new_conf = Config::new();
                         new_conf.setup(&mut self.window_server);
                         self.config = new_conf;
-                        println!("Config reloaded OK!");
+                        info!("Config reloaded OK!");
                     },
                     Message::Quit => {
                         unsafe {
@@ -129,7 +131,7 @@ impl<'a> Gallium<'a> {
                             if wind.is_some() {
                                 unsafe {
                                     self.window_server.kill_window(wind.unwrap().wind_ptr);
-                                    println!("Killed window");
+                                    info!("Killed window");
                                 }
                             }
                         }
@@ -178,7 +180,7 @@ impl<'a> Gallium<'a> {
                         work.refresh(&mut self.window_server, screen, self.config.current());
                     },
                     Message::None => (),
-                    _ => println!("Unknown key message!")
+                    _ => warn!("Unknown key message!")
                 }
             }
         }
@@ -186,15 +188,16 @@ impl<'a> Gallium<'a> {
 }
 
 fn main(){
+    GalliumLog::init();
     let gl = Gallium::setup();
     for argument in std::env::args() {
-        println!("{}", argument);
+        trace!("{}", argument);
         if argument[..].eq("--revert") {
             Config::reset(&mut gl.config.current());
-            println!("Reverted config!");
+            info!("Reverted config!");
             return;
         }
     }
-    debug!("Gallium has been setup.");
+    info!("Gallium has been setup.");
     gl.start();
 }

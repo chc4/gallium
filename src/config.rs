@@ -205,15 +205,14 @@ impl Config {
         path.push(".galliumrc");
         let mut fopt = OpenOptions::new();
         fopt.write(true).read(true);
-        println!("{}",path.display());
         let mut conf_file = fopt.open(path).unwrap();
         let mut buff = String::new();
         conf_file.read_to_string(&mut buff);
         let dec_conf = match json::decode(&buff) {
             Ok(v) => v,
             Err(e) =>{
-                        println!("Our config is corrupted!");
-                        println!("Error: {:?}",e);
+                        error!("Our config is corrupted!");
+                        error!("Error: {:?}",e);
                         default()
                      }
         };
