@@ -77,7 +77,6 @@ impl<'a> Gallium<'a> {
                     let mut work = self.window_manager.workspaces.current().unwrap();
                     for wind_ind in 0..work.windows.cards.len() {
                         if work.windows.cards[wind_ind].wind_ptr == wind_ptr {
-                            println!("Moused over window {}",wind_ptr);
                             work.windows.select(wind_ind);
                             work.refresh(&mut self.window_server, screen, conf);
                             break;

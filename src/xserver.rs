@@ -100,7 +100,7 @@ impl XServer {
         }
         debug!("XServer display: {:?}",disp);
         let root = XRootWindow(disp, screen_num);
-        XSelectInput(disp,root,(SubstructureNotifyMask|SubstructureRedirectMask|FocusChangeMask|EnterWindowMask|LeaveWindowMask).bits());
+        XSelectInput(disp,root,(SubstructureNotifyMask|SubstructureRedirectMask|EnterWindowMask).bits());
         XSync(disp,1);
         XServer {
             display: disp,
@@ -139,6 +139,7 @@ impl XServer {
     pub fn map(&mut self,wind: Window){
         unsafe {
             XMapWindow(self.display,wind);
+            XSelectInput(self.display,wind,(EnterWindowMask).bits());
         }
     }
     pub fn unmap(&mut self,wind: Window){
