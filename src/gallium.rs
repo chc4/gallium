@@ -97,7 +97,18 @@ impl<'a> Gallium<'a> {
         for k in self.config.current().keys {
             if k.binding.unwrap() == key {
                 match k.message {
-                   Message::Reload => {
+                    Message::Spawn(exe,args) => {
+                        println!("Spawning...");
+                        let mut c = Command::new(exe);
+                        if args.len()>0 {
+                            let co = c.arg(args);
+                            co.spawn();
+                        }
+                        else {
+                            c.spawn();
+                        }
+                    },
+                    Message::Reload => {
                         self.window_server.clear_keys();
                         let mut new_conf = Config::new();
                         new_conf.setup(&mut self.window_server);
