@@ -8,6 +8,41 @@ use std::cell::RefCell;
 use std::cmp::PartialEq;
 use std::mem::swap;
 use std::ptr;
+use std::ops::Index;
+
+pub struct Cycle {
+        max: isize,
+        slice: Vec<Option<usize>>
+}
+
+impl Index<isize> for Cycle {
+        type Output=Option<usize>;
+        fn index(&self, index: isize) -> &Option<usize> {
+                println!("Index {}",index);
+                if self.max == 0 { //empty interval, return &None
+                    return &self.slice[0];
+                }
+                if index == 0 {
+                    return &self.slice[0];
+                }
+                let b_ind = self.max + ((index.abs()%self.max) * index.abs()/index);
+                let b_ind = b_ind%self.max;
+                return &self.slice[b_ind as usize];
+       }
+}
+impl Cycle {
+    pub fn new(max: usize) -> Cycle {
+        let mut v = Vec::new();
+        for i in 0..max {
+            v.push(Some(i));
+        }
+        v.push(None);
+        Cycle {
+            max: max as isize,
+            slice: v
+        }
+    }
+}
 
 //A Vec<T> that has a `current` member.
 #[derive(PartialEq)]
@@ -88,7 +123,8 @@ impl<T> Deck<T>{
 pub struct Workspace<'a> {
     pub windows: Deck<Window>, //Is treated as a stack of the most recent windows
     pub layout: Box<Layout>,
-    master: Option<&'a Window>
+    master: Option<&'a Window>,
+    name: String
 }
 impl<'a> Workspace<'a>{
     pub fn refresh(&mut self, xserv: &mut XServer, screen: u32, mut config: Config){
@@ -103,7 +139,7 @@ impl<'a> Workspace<'a>{
         for w in &self.windows.cards[..] {
             if mast.is_some() && w.wind_ptr == mast.unwrap() {
                 xserv.set_border_color(w.wind_ptr,config.focus_color as u64);
-                xserv.focus(w.wind_ptr);
+                //xserv.focus(w.wind_ptr);
             }
             else {
                 xserv.set_border_color(w.wind_ptr,config.unfocus_color as u64);
@@ -145,13 +181,17 @@ impl<'a> WindowManager<'a> {
             let screens_: *const XineramaScreenInfo = unsafe { XineramaQueryScreens(serv.display, &num_screens) };
             XFree(screens_);
         }*/
-        let wind_deck = Deck::new();
-        let work = Workspace {
-            windows: wind_deck,
-            layout: LayoutFactory(Layouts::Tall),
-            master: None
-        };
-        works.push(work);
+        for wind_conf in config.current().workspaces {
+            let wind_deck = Deck::new();
+            let work = Workspace {
+                windows: wind_deck,
+                layout: LayoutFactory(wind_conf.layout),
+                master: None,
+                name: wind_conf.name
+            };
+            works.push(work);
+        }
+        works.select(0);
         let scr = Monitor {
             screen: unsafe { ptr::read(&*XDefaultScreenOfDisplay(serv.display.clone())) }, //Reused from XServer::new() :(
             workspace: 0

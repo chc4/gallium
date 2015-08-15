@@ -5,7 +5,7 @@ extern crate rustc_serialize;
 extern crate xlib;
 extern crate libc;
 use config::{Message,Config,ConfigLock,Direction};
-use window_manager::WindowManager;
+use window_manager::{WindowManager,Cycle};
 use xserver::{XServer,ServerEvent};
 use key::Key;
 use std::process::Command;
@@ -147,32 +147,36 @@ impl<'a> Gallium<'a> {
                             Direction::Backward => {
                                 let i = work.windows.index.unwrap_or(1);
                                 let l = work.windows.cards.len();
-                                if l == 0 {
-                                    work.windows.index = None;
-                                }
-                                else if i == 0 {
-                                    work.windows.index = Some(l-1);
-                                }
-                                else {
-                                    work.windows.index = Some(i-1);
-                                }
+                                let cycle = Cycle::new(l);
+                                work.windows.index = cycle[(i as isize) - 1];
                             },
                             Direction::Forward => {
                                 let i = work.windows.index.unwrap_or(0);
                                 let l = work.windows.cards.len();
-                                if l == 0 {
-                                    work.windows.index = None;
-                                }
-                                else if i == (l-1) {
-                                    work.windows.index = Some(0);
-                                }
-                                else {
-                                    work.windows.index = Some(i+1);
-                                }
+                                let cycle = Cycle::new(l);
+                                work.windows.index = cycle[(i as isize) + 1];
                             },
                             _ => ()
                         }
                         work.refresh(&mut self.window_server, screen, self.config.current());
+                    },
+                    Message::Switch(dir) => {
+                        let w_l = self.window_manager.workspaces.cards.len();
+                        let w_i = self.window_manager.workspaces.index.unwrap();
+                        let cycle = Cycle::new(w_l);
+                        match dir {
+                            Direction::Backward => {
+                                self.window_manager.switch(&mut self.window_server,
+                                                           self.config.current(),
+                                                           cycle[(w_i as isize) - 1].unwrap() as u32);
+                            },
+                            Direction::Forward => {
+                                self.window_manager.switch(&mut self.window_server,
+                                                           self.config.current(),
+                                                           cycle[(w_i as isize) + 1].unwrap() as u32);
+                            },
+                            _ => ()
+                        }
                     },
                     Message::Special(msg) => {
                         let mut work = self.window_manager.workspaces.current().unwrap();

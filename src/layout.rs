@@ -51,14 +51,15 @@ pub enum Layouts {
     Full
 }
 pub fn LayoutFactory(form: Layouts) -> Box<Layout> {
-    let lay = match form {
-        Layouts::Tall => TallLayout {
+    let lay: Box<Layout> = match form {
+        Layouts::Tall => Box::new(TallLayout {
             master: 1,
             percent: 50.0
-        },
+        }),
+        Layouts::Full => Box::new(FullLayout),
         _ => panic!("Unimplemented layout form!")
     };
-    Box::new(lay)
+    lay
 }
 
 //Placeholder layout for swapping
@@ -169,16 +170,29 @@ impl Layout for TallLayout {
     }
 }
 
-pub struct FullLayout {
-    reg: Region
-}
+pub struct FullLayout;
 
 impl Layout for FullLayout {
-    fn apply(&self, scrren: u32, xserv: &mut XServer, work: &mut Workspace, conf: &mut Config){
-    
+    fn apply(&self, screen: u32, xserv: &mut XServer, work: &mut Workspace, conf: &mut Config){
+        let padding = conf.padding;
+        let focus = work.windows.index;
+        for (ind,wind) in work.windows.cards.iter().enumerate() {
+            if focus.is_some() && ind != focus.unwrap() {
+                xserv.unmap(wind.wind_ptr);
+            }
+        }
+        focus.map(|wind|{
+            let ref mut wind = &mut work.windows.cards[wind];
+            wind.x = padding as isize;
+            wind.y = padding as isize;
+            wind.size = ((xserv.width(screen)  - ((padding*2) as u32)) as usize,
+                         (xserv.height(screen) - ((padding*2) as u32)) as usize);
+            xserv.refresh(wind);
+        });
     }
     fn add(&mut self, wind: &mut Window, xserv: &mut XServer){
         println!("Layout.add unimplemented");
+        xserv.map(wind.wind_ptr);
     }
     fn remove(&mut self, ind: usize, xserv: &mut XServer){
         println!("Layout.remove unimplemented");
