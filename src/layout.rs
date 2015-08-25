@@ -117,6 +117,7 @@ impl Layout for TallLayout {
             w.x = reg.x as isize;
             w.y = reg.y as isize;
             w.size = (reg.size_x as usize, wind_y as usize);
+            w.shown = true;
             reg.y = reg.y + wind_y;
             xserv.refresh(w);
         }
@@ -134,6 +135,7 @@ impl Layout for TallLayout {
                 w.x = reg.x as isize;
                 w.y = reg.y as isize;
                 w.size = (reg.size_x as usize,wind_y as usize);
+                w.shown = true;
                 reg.y = reg.y + wind_y;
                 xserv.refresh(w);
             }
@@ -163,7 +165,6 @@ impl Layout for TallLayout {
 
     fn add(&mut self, wind: &mut Window, xserv: &mut XServer){
         trace!("Added a new window, yaaay");
-        xserv.map(wind.wind_ptr);
     }
     fn remove(&mut self, ind: usize, xserv: &mut XServer){
         trace!("Removed window {}, oh nooo",ind);
@@ -176,23 +177,25 @@ impl Layout for FullLayout {
     fn apply(&self, screen: u32, xserv: &mut XServer, work: &mut Workspace, conf: &mut Config){
         let padding = conf.padding;
         let focus = work.windows.index;
-        for (ind,wind) in work.windows.cards.iter().enumerate() {
+        for (ind,ref mut wind) in work.windows.cards.iter_mut().enumerate() {
             if focus.is_some() && ind != focus.unwrap() {
-                xserv.unmap(wind.wind_ptr);
+                wind.shown = false;
+                xserv.refresh(wind);
             }
         }
         focus.map(|wind|{
+            warn!("focus.map");
             let ref mut wind = &mut work.windows.cards[wind];
             wind.x = padding as isize;
             wind.y = padding as isize;
             wind.size = ((xserv.width(screen)  - ((padding*2) as u32)) as usize,
                          (xserv.height(screen) - ((padding*2) as u32)) as usize);
+            wind.shown = true;
             xserv.refresh(wind);
         });
     }
     fn add(&mut self, wind: &mut Window, xserv: &mut XServer){
         println!("Layout.add unimplemented");
-        xserv.map(wind.wind_ptr);
     }
     fn remove(&mut self, ind: usize, xserv: &mut XServer){
         println!("Layout.remove unimplemented");

@@ -139,7 +139,7 @@ impl<'a> Workspace<'a>{
         for w in &self.windows.cards[..] {
             if mast.is_some() && w.wind_ptr == mast.unwrap() {
                 xserv.set_border_color(w.wind_ptr,config.focus_color as u64);
-                //xserv.focus(w.wind_ptr);
+                xserv.focus(w.wind_ptr);
             }
             else {
                 xserv.set_border_color(w.wind_ptr,config.unfocus_color as u64);
@@ -150,7 +150,8 @@ impl<'a> Workspace<'a>{
 
 pub struct Window {
     pub wind_ptr: XWindow,
-    pub mapped: bool, //not always true! just used with xserv.refresh(window)
+    pub shown: bool, //not always true! just used with xserv.refresh(window)
+    pub _mapped: bool, //used for xserv.map/unmap so it doesn't configure twice
     pub x: isize,
     pub y: isize,
     pub z: isize,
@@ -209,8 +210,8 @@ impl<'a> WindowManager<'a> {
         }
         //First, unmap all current windows
         for w in self.workspaces.current().unwrap().windows.cards.iter_mut() {
-            xserv.unmap(w.wind_ptr);
-            w.mapped = false;
+            w.shown = false;
+            xserv.refresh(w);
         }
         //Switch workspaces
         self.workspaces.select(ind as usize);

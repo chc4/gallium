@@ -150,13 +150,19 @@ impl XServer {
 
     pub fn refresh(&mut self,gwind: &mut GWindow){
         unsafe {
-            if gwind.mapped == false {
-                warn!("Refreshed an unmapped window, remapping it");
+            if gwind.shown && gwind._mapped == false {
+                gwind._mapped = true;
                 self.map(gwind.wind_ptr);
-                gwind.mapped = true;
             }
-            let (s_x,s_y) = gwind.size;
-            XMoveResizeWindow(self.display, gwind.wind_ptr, gwind.x as i32, gwind.y as i32, s_x as u32, s_y as u32);
+            else if gwind.shown == false && gwind._mapped {
+                gwind._mapped = false;
+                self.unmap(gwind.wind_ptr);
+            }
+
+            if gwind._mapped {
+                let (s_x,s_y) = gwind.size;
+                XMoveResizeWindow(self.display, gwind.wind_ptr, gwind.x as i32, gwind.y as i32, s_x as u32, s_y as u32);
+            }
         }
     }
 
@@ -265,7 +271,8 @@ impl XServer {
                 debug!("Window added {}",ev.window);
                 let w = GWindow {
                    wind_ptr: ev.window,
-                   mapped: false,
+                   _mapped: false,
+                   shown: false,
                    x: 0,
                    y: 0,
                    z: 0,
