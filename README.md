@@ -1,6 +1,21 @@
 Gallium
 =======
 
+```
+For a second Kassad thought it was another person
+Wearing the chromium forcefields he and Moneta were
+draped in─but only for a second. There was nothing human
+about this particular quicksilver-over-chrome construct.
+Kassad dreamily noted the four arms, retractable
+fingerblades, the profusion of thornspikes on throat,
+forehead, wrists, knees, and body, but not once did his gaze
+leave the two thousand-faceted eyes which burned with a red
+ﬂame that paled sunlight and dimmed the day to blood
+shadows.
+                                          - Hyperion Cantos
+```
+
+
 A WM written in Rust, inspired and based loosely off of Kintaro's wtftw project.
 This is a toy project. Don't even think about using it.
 
