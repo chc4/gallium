@@ -6,6 +6,7 @@ use rustc_serialize::{Encodable,Decodable,json,Encoder,Decoder};
 use rustc_serialize::Decoder as StdDecoder;
 use std::io::{Read,Write};
 use std::fs::OpenOptions;
+use std::path::PathBuf;
 use key::Key;
 use xserver::XServer;
 use layout::{LayoutFactory,Layouts};
@@ -200,14 +201,20 @@ fn default() -> Config {
 
 impl Config {
     /// Create the Config from a json file
-    pub fn initialize() -> Config {
-        let mut path = home_dir().unwrap();
-        path.push(".galliumrc");
+    pub fn load(path: Option<String>) -> ConfigLock {
+        let mut path = if let Some(p) = path {
+            PathBuf::from(&p)
+        } else {
+            let mut path = home_dir().unwrap();
+            path.push(".galliumrc");
+            path
+        };
         let mut fopt = OpenOptions::new();
         fopt.write(true).read(true);
         let mut conf_file = fopt.open(path).unwrap();
         let mut buff = String::new();
         conf_file.read_to_string(&mut buff);
+
         let dec_conf = match json::decode(&buff) {
             Ok(v) => v,
             Err(e) =>{
@@ -216,7 +223,9 @@ impl Config {
                         default()
                      }
         };
-        dec_conf
+        ConfigLock {
+            conf: RwLock::new(dec_conf)
+        }
     }
     pub fn setup(&mut self, serv: &mut XServer){
         serv.clear_keys();
@@ -253,7 +262,7 @@ impl Config {
         let mut buff = String::new();
         {
             let mut pretty = json::Encoder::new_pretty(&mut buff);
-            (&default()).encode(&mut pretty).unwrap();
+            (&default()).encode(&mut pretty).unwrap()
         }
         conf_file.write(&buff.into_bytes());
         conf_file.sync_data();
@@ -262,7 +271,8 @@ impl Config {
     //Wrap a config in a RWLock
     pub fn new() -> ConfigLock {
         ConfigLock {
-            conf: RwLock::new(Config::initialize())
+            conf: RwLock::new(default())
+            //conf: RwLock::new(Config::initialize())
         }
     }
 }

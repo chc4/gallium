@@ -28,7 +28,6 @@ impl<'a> Gallium<'a> {
     fn setup() -> Gallium<'a> {
         let mut window_server = unsafe { XServer::new() };
         let mut config = Config::new();
-        config.setup(&mut window_server);
         let window_manager = WindowManager::new(&window_server,&config);
 
         Gallium {
@@ -193,14 +192,29 @@ impl<'a> Gallium<'a> {
 
 fn main(){
     GalliumLog::init();
-    let gl = Gallium::setup();
+    let mut gl = Gallium::setup();
+
+    let mut init = false;
     for argument in std::env::args() {
         trace!("{}", argument);
-        if argument[..].eq("--revert") {
+        if argument[..].eq("--new") {
             Config::reset(&mut gl.config.current());
-            info!("Reverted config!");
+            init = true;
+            info!("New config installed!");
             return;
         }
+        if argument[0..3].eq("-c=") {
+            println!("Using {:?} as config path",&argument[3..]);
+            let mut new_conf = Config::load(Some(argument[3..].to_string()));
+            new_conf.setup(&mut gl.window_server);
+            gl.config = new_conf;
+            init = true;
+        }
+    }
+    if init == false {
+        let mut new_conf = Config::load(None);
+        new_conf.setup(&mut gl.window_server);
+        gl.config = new_conf;
     }
     info!("Gallium has been setup.");
     gl.start();
