@@ -204,7 +204,7 @@ fn main(){
             return;
         }
         if argument[0..3].eq("-c=") {
-            println!("Using {:?} as config path",&argument[3..]);
+            info!("Using {:?} as config path",&argument[3..]);
             let mut new_conf = Config::load(Some(argument[3..].to_string()));
             new_conf.setup(&mut gl.window_server);
             gl.config = new_conf;

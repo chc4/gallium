@@ -138,11 +138,11 @@ impl<'a> Workspace<'a>{
         let mast = self.windows.current().map(|x| x.wind_ptr );
         for w in &self.windows.cards[..] {
             if mast.is_some() && w.wind_ptr == mast.unwrap() {
-                xserv.set_border_color(w.wind_ptr,config.focus_color as u64);
+                xserv.set_border_color(w.wind_ptr,config.focus_color.0 as u64);
                 xserv.focus(w.wind_ptr);
             }
             else {
-                xserv.set_border_color(w.wind_ptr,config.unfocus_color as u64);
+                xserv.set_border_color(w.wind_ptr,config.unfocus_color.0 as u64);
             }
         }
     }

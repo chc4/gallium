@@ -4,7 +4,8 @@ use std::env::home_dir;
 use std::sync::RwLock;
 use rustc_serialize::{Encodable,Decodable,json,Encoder,Decoder};
 use rustc_serialize::Decoder as StdDecoder;
-use std::io::{Read,Write};
+use rustc_serialize::json::ParserError;
+use std::io::{Error,ErrorKind,Read,Write};
 use std::fs::OpenOptions;
 use std::path::PathBuf;
 use key::Key;
@@ -61,6 +62,26 @@ impl Encodable for KeyBind {
         })
     }
 }
+
+#[derive(Clone)]
+pub struct Color(pub u32);
+impl Encodable for Color {
+    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(),S::Error> {
+        s.emit_str(&format!("{:X}",self.0))
+    }
+}
+impl Decodable for Color {
+    fn decode<D: Decoder>(d: &mut D) -> Result<Color,D::Error> {
+        let c = try!(
+            u32::from_str_radix(&try!(d.read_str()).to_string(),16)
+            .map_err(|e|
+                d.error("ParseIntError")  // no clue how this should actually work
+            )
+        );
+        Ok(Color(c))
+    }
+}
+
 #[derive(RustcEncodable,RustcDecodable,Clone)]
 pub struct Config {
     kommand: KeyBind,
@@ -68,8 +89,8 @@ pub struct Config {
     pub border: u32,
     pub spacing: u16,
     pub follow_mouse: bool,
-    pub focus_color: u32,
-    pub unfocus_color: u32,
+    pub focus_color: Color,
+    pub unfocus_color: Color,
     pub workspaces: Vec<WorkspaceConf>,
     pub keys: Vec<KeyBind>,
 }
@@ -128,6 +149,7 @@ pub enum SpecialMsg {
     Add,
     Subtract
 }
+
 #[derive(Clone,RustcDecodable,RustcEncodable)]
 pub enum Message {
     Spawn(String,String),
@@ -157,9 +179,9 @@ fn default() -> Config {
         // If window focus should follow your mouse cursor or not
         follow_mouse: true,
         // Border color for the focused window
-        focus_color: 0x3DAFDC,
+        focus_color: Color(0x3DAFDC),
         // ...and for unfocused ones
-        unfocus_color: 0x282828,
+        unfocus_color: Color(0x282828),
         workspaces: vec!(
             WorkspaceConf { name: "|".to_string(), layout: Layouts::Tall },
             WorkspaceConf { name: "||".to_string(), layout: Layouts::Full },
