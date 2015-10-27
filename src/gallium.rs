@@ -5,7 +5,8 @@ extern crate rustc_serialize;
 extern crate xlib;
 extern crate libc;
 use config::{Message,Config,ConfigLock,Direction};
-use window_manager::{WindowManager,Cycle};
+use window_manager::{WindowManager,Workspace,Cycle};
+use layout::clamp;
 use xserver::{XServer,ServerEvent};
 use key::Key;
 use std::process::Command;
@@ -109,6 +110,11 @@ impl<'a> Gallium<'a> {
                             c.spawn();
                         }
                     },
+                    Message::Master => {
+                        let mut work = self.window_manager.workspaces.current().unwrap();
+                        //if wind.floating XRaiseWindow
+                        //else cards.forget and push(?)
+                    },
                     Message::Reload => {
                         self.window_server.clear_keys();
                         let mut new_conf = Config::new();
@@ -139,6 +145,70 @@ impl<'a> Gallium<'a> {
                             work.windows.forget(wind_ind.unwrap());
                         }
                         work.refresh(&mut self.window_server, screen, self.config.current());
+                    },
+                    Message::Tile => {
+                        let mut work = self.window_manager.workspaces.current().unwrap();
+                        let mut b = false;
+                        {
+                            let c = work.windows.current();
+                            c.map(|wind| {
+                                wind.floating = !wind.floating;
+                                b = true;
+                            });
+                        }
+                        if b {
+                            work.refresh(&mut self.window_server, screen, self.config.current());
+                        }
+                    },
+                    Message::Resize(dir) => {
+                        let mut work = self.window_manager.workspaces.current().unwrap();
+                        let mut b = false;
+                        {
+                            let wind = work.windows.current();
+                            wind.map(|wind| {
+                                if !wind.floating {
+                                    return
+                                }
+                                let (x,y) = match dir {
+                                    Direction::Backward => (-15,0),
+                                    Direction::Forward => (15,0),
+                                    Direction::Up => (0,-15),
+                                    Direction::Down => (0,15)
+                                };
+                                wind.size = (
+                                    clamp(0,(wind.size.0 as i32) + x,2048) as usize,
+                                    clamp(0,(wind.size.1 as i32) + y,2048) as usize
+                                    );
+                                b = true;
+                            });
+                        }
+                        if b {
+                            work.refresh(&mut self.window_server, screen, self.config.current());
+                        }
+                    },
+                    Message::Move(dir) => {
+                        let mut work = self.window_manager.workspaces.current().unwrap();
+                        let mut b = false;
+                        {
+                            let wind = work.windows.current();
+                            wind.map(|wind| {
+                                if !wind.floating {
+                                    return
+                                }
+                                let (x,y) = match dir {
+                                    Direction::Backward => (-15,0),
+                                    Direction::Forward => (15,0),
+                                    Direction::Up => (0,-15),
+                                    Direction::Down => (0,15)
+                                };
+                                wind.x = wind.x + x;
+                                wind.y = wind.y + y;
+                                b = true;
+                            });
+                        }
+                        if b {
+                            work.refresh(&mut self.window_server, screen, self.config.current());
+                        }
                     },
                     Message::Focus(dir) => {
                         let mut work = self.window_manager.workspaces.current().unwrap();

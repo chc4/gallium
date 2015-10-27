@@ -6,7 +6,7 @@ extern crate core;
 use self::core::ops::IndexMut;
 
 //Why is this not provided by the stdlib?
-fn clamp<T: Ord>(min: T, v: T, max:T) -> T {
+pub fn clamp<T: Ord>(min: T, v: T, max:T) -> T {
     if max<=min {
         return min //kinda makes sense, and makes my life easier
     }
@@ -82,7 +82,11 @@ pub struct TallLayout {
 
 impl Layout for TallLayout {
     fn apply(&self, screen: u32, xserv: &mut XServer, work: &mut Workspace, config: &mut Config){
-        let mut wind = &mut work.windows.cards[..];
+        for wind in work.windows.cards.iter_mut().filter(|wind| wind.floating) {
+            xserv.refresh(wind);
+        }
+        let mut wind: &mut Vec<&mut Window> = &mut work.windows.cards[..]
+            .iter_mut().filter(|wind| !wind.floating ).collect();
         let pad = config.padding as usize;
         let (x,y) = (xserv.width(screen as u32) as usize - pad - pad,
                     xserv.height(screen as u32) as usize - pad - pad);

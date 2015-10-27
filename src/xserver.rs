@@ -273,6 +273,7 @@ impl XServer {
                    wind_ptr: ev.window,
                    _mapped: false,
                    shown: false,
+                   floating: false,
                    x: 0,
                    y: 0,
                    z: 0,

@@ -150,6 +150,7 @@ impl<'a> Workspace<'a>{
 
 pub struct Window {
     pub wind_ptr: XWindow,
+    pub floating: bool,
     pub shown: bool, //not always true! just used with xserv.refresh(window)
     pub _mapped: bool, //used for xserv.map/unmap so it doesn't configure twice
     pub x: isize,
