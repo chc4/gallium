@@ -24,7 +24,15 @@ pub struct Key {
     pub sym: KeySym,
     pub modifier: KeyMod,
 }
-const LOOKUP: [&'static str; 9] = ["S-","Lock-","C-","M-","M2-","M3-","M4-","M5-","K-"];
+const LOOKUP: [(&'static str, KeyMod); 9] = [("S-",SHIFT),
+                                             ("Lock-",LOCK),
+                                             ("C-",CONTROL),
+                                             ("M-",MOD1),
+                                             ("M2-",MOD2),
+                                             ("M3-",MOD3),
+                                             ("M4-",MOD4),
+                                             ("M5-",MOD5),
+                                             ("K-",KOMMAND)];
 impl Debug for Key {
     fn fmt(&self, f: &mut Formatter) -> Result {
         let (pref,x) = self.chord();
@@ -54,32 +62,30 @@ impl Key {
     }
 
     pub fn create(s: String, serv: &XServer) -> Key {
-        let mut flag = 0u32;
+        let mut flag = KeyMod::empty();
         let mut key = "";
         for mut m in s.split('-') {
             let mut full = m.to_string();
             full.push_str("-");
             if full == "K-" {
-                flag = flag | serv.kommand_mod.borrow().unwrap().bits();
+                flag = flag | serv.kommand_mod.borrow().unwrap();
             }
             else {
-                match LOOKUP.position_elem(&&full[..]) {
-                    Some(v) => {
-                        flag = flag | 1<<v;
-                    },
-                    None => {
-                        key = m;
+                let mut found = false;
+                for &(c,k) in LOOKUP.iter() {
+                    if full == c {
+                        flag = flag | k;
+                        found = true;
                     }
+                }
+                if !found {
+                    key = m
                 }
             }
         }
         let mut sym = serv.string_to_keysym(&mut key.to_string());
         let code = serv.keysym_to_keycode(sym);
 
-        let flag = match KeyMod::from_bits(flag){
-            Some(v) => v,
-            None => KeyMod::empty()
-        };
         Key {
             code: code as KeyCode,
             sym: sym,
@@ -90,8 +96,8 @@ impl Key {
     pub fn chord(&self) -> (String,&'static str) {
         let mut pref = "".to_string();
         for b in 0..8 {
-            if self.modifier.bits() & (1<<b) == 1<<b {
-                pref.push_str(LOOKUP[b]);
+            if self.modifier.contains(LOOKUP[b].1) {
+                pref.push_str(LOOKUP[b].0);
             }
         }
         let cs = keysym_to_string(self.sym);

@@ -1,4 +1,4 @@
-#![feature(collections,libc,core,slice_position_elem)]
+#![feature(libc)]
 #[macro_use] extern crate log;
 extern crate rustc_serialize;
 #[macro_use] extern crate bitflags;
@@ -114,6 +114,10 @@ impl<'a> Gallium<'a> {
                         let mut work = self.window_manager.workspaces.current().unwrap();
                         //if wind.floating XRaiseWindow
                         //else cards.forget and push(?)
+                    },
+                    Message::Translate(dir) => {
+                        //swap adjecant windows
+                        //set new current
                     },
                     Message::Reload => {
                         self.window_server.clear_keys();

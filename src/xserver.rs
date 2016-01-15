@@ -1,7 +1,7 @@
 #[allow(non_upper_case_globals)]
 extern crate libc;
 use std::cell::RefCell;
-use self::libc::funcs::c95::stdlib::malloc;
+use libc::malloc;
 pub use xlib::*;
 use window_manager::Window as GWindow;
 pub use xlib::Window as XWindow;
@@ -212,7 +212,7 @@ impl XServer {
             let wind: Window = *children.offset(ind);
             self.kill_window(wind); //Kill them softly
         }
-        'stall: while(nchildren > 0){
+        'stall: while nchildren > 0 {
             let ev = self.get_event();
             match ev {
                 ServerEvent::KeyPress(key) => {
