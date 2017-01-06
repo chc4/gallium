@@ -123,7 +123,20 @@ impl<'a> Gallium<'a> {
                         self.window_server.clear_keys();
                         let mut new_conf = Config::new();
                         new_conf.setup(&mut self.window_server);
-                        self.config = new_conf;
+                        //replace the layouts for all the ones mapped
+                        //should really just replace for ones that are wrong
+                        {
+                            let ls = new_conf.current().workspaces;
+                            let wk = &mut self.window_manager.workspaces.cards;
+                            self.config = new_conf;
+                            ls.iter().zip(wk).map(|(lay,work)|{
+                                info!("Layout for workspace {} is {:?}",lay.name,lay.layout);
+                                work.layout = layout::LayoutFactory(lay.layout);
+                            });
+                        }
+
+                        let mut work = self.window_manager.workspaces.current().unwrap();
+                        work.refresh(&mut self.window_server, screen, self.config.current());
                         info!("Config reloaded OK!");
                     },
                     Message::Quit => {

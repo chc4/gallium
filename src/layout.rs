@@ -42,7 +42,7 @@ pub trait Layout {
     }
 }
 
-#[derive(Clone,Copy,PartialEq,RustcDecodable,RustcEncodable)]
+#[derive(Clone,Copy,PartialEq,RustcDecodable,RustcEncodable,Debug)]
 pub enum Layouts {
     Tall,
     Wide,
@@ -179,23 +179,26 @@ pub struct FullLayout;
 
 impl Layout for FullLayout {
     fn apply(&self, screen: u32, xserv: &mut XServer, work: &mut Workspace, conf: &mut Config){
-        let padding = conf.padding;
+        let pad = conf.padding as usize;
+        let (x,y) = (xserv.width(screen as u32) as usize - pad - pad,
+                    xserv.height(screen as u32) as usize - pad - pad);
+        let space = conf.spacing as usize;
         let focus = work.windows.index;
+        let mut count = work.windows.cards.len();
         for (ind,ref mut wind) in work.windows.cards.iter_mut().enumerate() {
-            if focus.is_some() && ind != focus.unwrap() {
-                wind.shown = false;
-                xserv.refresh(wind);
-            }
+            wind.x = (pad + (space * ind)) as isize;
+            wind.y = (pad + (space * ind)) as isize;
+            wind.size = (clamp(0,x - (space * count),x) as usize,
+                         clamp(0,y - (space * count),y) as usize);
+            wind.shown = true;
+            xserv.refresh(wind);
         }
         focus.map(|wind|{
             warn!("focus.map");
             let ref mut wind = &mut work.windows.cards[wind];
-            wind.x = padding as isize;
-            wind.y = padding as isize;
-            wind.size = ((xserv.width(screen)  - ((padding*2) as u32)) as usize,
-                         (xserv.height(screen) - ((padding*2) as u32)) as usize);
             wind.shown = true;
             xserv.refresh(wind);
+            unsafe { xserv.bring_to_front(wind.wind_ptr); } // XX MAY BE HORRIBLY WRONG
         });
     }
     fn add(&mut self, wind: &mut Window, xserv: &mut XServer){

@@ -162,8 +162,22 @@ impl XServer {
             if gwind._mapped {
                 let (s_x,s_y) = gwind.size;
                 XMoveResizeWindow(self.display, gwind.wind_ptr, gwind.x as i32, gwind.y as i32, s_x as u32, s_y as u32);
-            }
+           }
         }
+    }
+
+    pub unsafe fn bring_to_front(&mut self, wind: Window){
+        //let's hope this is the correct way to do it?
+        XConfigureWindow(self.display, wind, /* CWStackMode */ (1<<6),
+            &mut XWindowChanges {
+                x: 0,
+                y: 0,
+                width: 0,
+                height: 0,
+                border_width: 0,
+                sibling: 0,
+                stack_mode: 0 /* Above */
+        });
     }
 
     pub unsafe fn kill_window(&mut self, wind: Window){

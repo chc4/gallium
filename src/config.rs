@@ -102,9 +102,6 @@ impl ConfigLock {
     pub fn current(&self) -> Config {
         self.conf.read().unwrap().clone()
     }
-    pub fn update(&mut self,new_conf: Config){
-        self.conf = RwLock::new(new_conf);
-    }
     pub fn setup(&mut self,serv: &mut XServer){
         self.conf.write().unwrap().setup(serv);
     }
@@ -185,7 +182,8 @@ fn default() -> Config {
         unfocus_color: Color(0x282828),
         workspaces: vec!(
             WorkspaceConf { name: "|".to_string(), layout: Layouts::Tall },
-            WorkspaceConf { name: "||".to_string(), layout: Layouts::Full },
+            WorkspaceConf { name: "||".to_string(), layout: Layouts::Tall },
+            WorkspaceConf { name: "|||".to_string(), layout: Layouts::Full },
         ),
         keys: vec!(
             KeyBind::new("K-S-Return",Message::Spawn("urxvt".to_string(),"".to_string())),
