@@ -137,6 +137,7 @@ impl<'a> Workspace<'a>{
         swap(&mut self.layout, &mut holder);
         let mast = self.windows.current().map(|x| x.wind_ptr );
         for w in &self.windows.cards[..] {
+            xserv.set_border_width(w.wind_ptr,config.border);
             if mast.is_some() && w.wind_ptr == mast.unwrap() {
                 xserv.set_border_color(w.wind_ptr,config.focus_color.0 as u64);
                 xserv.focus(w.wind_ptr);

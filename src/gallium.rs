@@ -50,7 +50,6 @@ impl<'a> Gallium<'a> {
                     let conf = self.config.current();
                     w.layout.add(&mut window, &mut self.window_server);
                     w.windows.push(window);
-                    self.window_server.set_border_width(p,conf.border);
                     w.refresh(&mut self.window_server, screen, conf);
                 },
                 ServerEvent::KeyPress(key) => {
@@ -114,14 +113,35 @@ impl<'a> Gallium<'a> {
                         let mut work = self.window_manager.workspaces.current().unwrap();
                         //if wind.floating XRaiseWindow
                         //else cards.forget and push(?)
+                        if let Some(ind) = work.windows.index {
+                            if work.windows.cards.len() > 0 {
+                                work.windows.cards.swap(0, ind);
+                                work.windows.select(0);
+                            }
+                        }
+                        work.refresh(&mut self.window_server, screen, self.config.current());
                     },
                     Message::Translate(dir) => {
                         //swap adjecant windows
                         //set new current
+                        let mut work = self.window_manager.workspaces.current().unwrap();
+                        let off = match dir {
+                            Direction::Forward => 1,
+                            Direction::Backward => -1,
+                            _ => 0,
+                        };
+                        work.windows.index.map(|i|{
+                            let l = work.windows.cards.len();
+                            let cycle = Cycle::new(l);
+                            work.windows.swap(i, cycle[(i as isize) + off].unwrap_or(i));
+                            work.windows.index = cycle[(i as isize) + off];
+                        });
+                        work.refresh(&mut self.window_server, screen, self.config.current());
                     },
                     Message::Reload => {
                         self.window_server.clear_keys();
-                        let mut new_conf = Config::new();
+                        // keep old path
+                        let mut new_conf = Config::load(self.config.path.clone());
                         new_conf.setup(&mut self.window_server);
                         //replace the layouts for all the ones mapped
                         //should really just replace for ones that are wrong

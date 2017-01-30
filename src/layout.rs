@@ -82,9 +82,7 @@ pub struct TallLayout {
 
 impl Layout for TallLayout {
     fn apply(&self, screen: u32, xserv: &mut XServer, work: &mut Workspace, config: &mut Config){
-        for wind in work.windows.cards.iter_mut().filter(|wind| wind.floating) {
-            xserv.refresh(wind);
-        }
+        {
         let mut wind: &mut Vec<&mut Window> = &mut work.windows.cards[..]
             .iter_mut().filter(|wind| !wind.floating ).collect();
         let pad = config.padding as usize;
@@ -143,6 +141,10 @@ impl Layout for TallLayout {
                 reg.y = reg.y + wind_y;
                 xserv.refresh(w);
             }
+        }
+        }  // non-lexical borrows when
+        for wind in work.windows.cards.iter_mut().filter(|wind| wind.floating) {
+            xserv.refresh(wind);
         }
     }
 

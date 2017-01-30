@@ -95,7 +95,8 @@ pub struct Config {
     pub keys: Vec<KeyBind>,
 }
 pub struct ConfigLock {
-    conf: RwLock<Config>
+    conf: RwLock<Config>,
+    pub path: Option<String>
 }
 
 impl ConfigLock {
@@ -175,7 +176,7 @@ fn default() -> Config {
         // The blank-space in between tiled windows
         spacing: 5,
         // If window focus should follow your mouse cursor or not
-        follow_mouse: true,
+        follow_mouse: false,
         // Border color for the focused window
         focus_color: Color(0x3DAFDC),
         // ...and for unfocused ones
@@ -223,8 +224,8 @@ fn default() -> Config {
 
 impl Config {
     /// Create the Config from a json file
-    pub fn load(path: Option<String>) -> ConfigLock {
-        let mut path = if let Some(p) = path {
+    pub fn load(_path: Option<String>) -> ConfigLock {
+        let mut path = if let Some(p) = _path.clone() {
             PathBuf::from(&p)
         } else {
             let mut path = home_dir().unwrap();
@@ -246,7 +247,8 @@ impl Config {
                      }
         };
         ConfigLock {
-            conf: RwLock::new(dec_conf)
+            conf: RwLock::new(dec_conf),
+            path: _path
         }
     }
     pub fn setup(&mut self, serv: &mut XServer){
@@ -293,8 +295,9 @@ impl Config {
     //Wrap a config in a RWLock
     pub fn new() -> ConfigLock {
         ConfigLock {
-            conf: RwLock::new(default())
+            conf: RwLock::new(default()),
             //conf: RwLock::new(Config::initialize())
+            path: None
         }
     }
 }
