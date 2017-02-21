@@ -275,7 +275,7 @@ impl Config {
         serv.grab_keys();
     }
 
-    pub fn reset(&mut self){
+    pub fn reset(){
         //Let's just roll back to the default
         //conf_file.truncate(0);
         let mut path = home_dir().unwrap();

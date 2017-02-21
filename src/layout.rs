@@ -200,7 +200,7 @@ impl Layout for FullLayout {
             let ref mut wind = &mut work.windows.cards[wind];
             wind.shown = true;
             xserv.refresh(wind);
-            unsafe { xserv.bring_to_front(wind.wind_ptr); } // XX MAY BE HORRIBLY WRONG
+            //unsafe { xserv.bring_to_front(wind.wind_ptr); } // XX MAY BE HORRIBLY WRONG
         });
     }
     fn add(&mut self, wind: &mut Window, xserv: &mut XServer){

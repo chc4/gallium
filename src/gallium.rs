@@ -299,27 +299,29 @@ impl<'a> Gallium<'a> {
 
 fn main(){
     GalliumLog::init();
-    let mut gl = Gallium::setup();
 
     let mut init = false;
+    let mut new_conf = None;
     for argument in std::env::args() {
         trace!("{}", argument);
         if argument[..].eq("--new") {
-            Config::reset(&mut gl.config.current());
+            Config::reset();
             init = true;
             info!("New config installed!");
             return;
         }
         if argument[0..3].eq("-c=") {
             info!("Using {:?} as config path",&argument[3..]);
-            let mut new_conf = Config::load(Some(argument[3..].to_string()));
-            new_conf.setup(&mut gl.window_server);
-            gl.config = new_conf;
+            new_conf = Some(Config::load(Some(argument[3..].to_string())));
             init = true;
+            continue;
         }
     }
+    let mut gl = Gallium::setup();
     if init == false {
-        let mut new_conf = Config::load(None);
+        new_conf = Some(Config::load(None));
+    }
+    if let Some(mut new_conf) = new_conf {
         new_conf.setup(&mut gl.window_server);
         gl.config = new_conf;
     }
