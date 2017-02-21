@@ -5,12 +5,12 @@ use std::sync::RwLock;
 use rustc_serialize::{Encodable,Decodable,json,Encoder,Decoder};
 use rustc_serialize::Decoder as StdDecoder;
 use rustc_serialize::json::ParserError;
-use std::io::{Error,ErrorKind,Read,Write};
+use std::io::{Read,Write};
 use std::fs::OpenOptions;
 use std::path::PathBuf;
 use key::Key;
 use xserver::XServer;
-use layout::{LayoutFactory,Layouts};
+use layout::Layouts;
 use self::Direction::*;
 // Common configuration options for the window manager.
 

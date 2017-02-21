@@ -1,6 +1,7 @@
 use xserver::{XServer};
 use super::Gallium;
-use window_manager::{Deck,Workspace,Window};
+use window_manager::{Workspace,Window};
+use deck::Deck;
 use config::{Config,Direction,SpecialMsg};
 extern crate core;
 use self::core::ops::IndexMut;

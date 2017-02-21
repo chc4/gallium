@@ -5,13 +5,17 @@ extern crate rustc_serialize;
 extern crate xlib;
 extern crate libc;
 use config::{Message,Config,ConfigLock,Direction};
-use window_manager::{WindowManager,Workspace,Cycle};
+use window_manager::WindowManager;
 use layout::clamp;
+use deck::Deck;
+use cycle::Cycle;
 use xserver::{XServer,ServerEvent};
 use key::Key;
 use std::process::Command;
 use gallium_log::GalliumLog;
 
+pub mod cycle;
+pub mod deck;
 pub mod config;
 pub mod window_manager;
 pub mod key;
@@ -317,6 +321,7 @@ fn main(){
             continue;
         }
     }
+
     let mut gl = Gallium::setup();
     if init == false {
         new_conf = Some(Config::load(None));
