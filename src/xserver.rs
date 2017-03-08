@@ -2,9 +2,9 @@
 extern crate libc;
 use std::cell::RefCell;
 use libc::malloc;
-pub use xlib::*;
+//pub use xlib::*;
 use window_manager::Window as GWindow;
-pub use xlib::Window as XWindow;
+//pub use xlib::Window as XWindow;
 pub use key::{
     Key,
     KeyMod,
@@ -15,6 +15,11 @@ use std::ffi::{CString,CStr};
 use std::ptr::{null_mut,read};
 use std::mem::{zeroed,transmute};
 use self::libc::{c_long,c_ulong,c_void,c_int};
+pub use x11::xlib::*;
+//pub use xcb::xproto::*;
+use xcb::base::Connection;
+pub use x11::xlib::{Atom,KeyCode,KeySym,Screen,Window};
+pub use x11::xlib::Window as XWindow;
 
 //Event types
 mod xevent {
@@ -62,7 +67,8 @@ extern {
 //This is not going to be window server agnostic like wtftw is. Sorry, too hard
 //to tell what is server specific or not...Also I don't use Wayland
 pub struct XServer {
-    pub display: *mut Display, //Why is this called Display, it's a Connection
+    pub conn: Connection,
+    pub display: *mut Display,
     root: Window,
     event: *mut XEvent,
     keys: Vec<Key>,
@@ -89,20 +95,21 @@ pub fn keysym_to_string(sym: KeySym) -> &'static CStr {
 impl XServer {
     pub unsafe fn new() -> XServer {
         //TODO: Setup error handler
-        let disp = XOpenDisplay(null_mut());
-        if disp == null_mut() {
-            panic!("No display found, exiting.");
-        }
-        let screen = XDefaultScreenOfDisplay(disp);
-        let screen_num = XDefaultScreen(disp);
-        if screen == null_mut() {
-            panic!("No default screen found, exiting.");
-        }
-        debug!("XServer display: {:?}",disp);
-        let root = XRootWindow(disp, screen_num);
-        XSelectInput(disp,root,(SubstructureNotifyMask|SubstructureRedirectMask|EnterWindowMask).bits());
+        let (conn, screen_num) = Connection::connect_with_xlib_display().unwrap();
+        let (disp, root) = {
+            let setup = conn.get_setup();
+            let disp = conn.get_raw_dpy();
+            let screen = setup.roots().nth(screen_num as usize).unwrap();
+
+            debug!("XServer display: {:?}",disp);
+            let root = XRootWindow(disp, screen_num);
+            (disp, root)
+        };
+        XSelectInput(disp,root,(SubstructureNotifyMask|SubstructureRedirectMask|EnterWindowMask));
         XSync(disp,1);
+
         XServer {
+            conn: conn,
             display: disp,
             root: root,
             event: malloc(256) as *mut XEvent,//unsafe { *malloc(size_of::<XEvent>() as *const XEvent) }, //Stolen from wtftw(ish)
@@ -139,7 +146,8 @@ impl XServer {
     pub fn map(&mut self,wind: Window){
         unsafe {
             XMapWindow(self.display,wind);
-            XSelectInput(self.display,wind,(EnterWindowMask).bits());
+            //xcb_map_window(self.display, wind);
+            XSelectInput(self.display,wind,(EnterWindowMask));
         }
     }
     pub fn unmap(&mut self,wind: Window){
@@ -209,7 +217,7 @@ impl XServer {
             data: data,
         };
         let mess_ptr = &mut message as *mut XClientBullshit as *mut XClientMessageEvent;
-        XSendEvent(self.display, wind, 0 /*false*/, NoEventMask.bits(), (mess_ptr as *mut XEvent));
+        XSendEvent(self.display, wind, 0 /*false*/, NoEventMask, (mess_ptr as *mut XEvent));
     }
 
     pub unsafe fn quit(&mut self,qkey: Key){
@@ -262,7 +270,7 @@ impl XServer {
             XNextEvent(self.display, self.event);
         }
         trace!("XNextEvent passed");
-        let event_type = unsafe { (*self.event)._type };
+        let event_type = unsafe { (*self.event).get_type() };
         match event_type {
             xevent::ButtonPress => unsafe {
                 let ev = self.get_event_as::<XButtonPressedEvent>();
@@ -314,7 +322,6 @@ impl XServer {
         }
         //Apparently this may have problems with NumLock.
         //Cross that bridge when we get to it.
-        let GrabModeAsync = 1i32;
         for key in self.keys.iter(){
             unsafe {
                 XGrabKey(self.display, key.code as i32, key.modifier.bits(), self.root, true as i32, GrabModeAsync, GrabModeAsync);

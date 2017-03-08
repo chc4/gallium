@@ -1,6 +1,6 @@
 use std::fmt::{Debug,Formatter,Result};
 use std::str::from_utf8;
-use xlib::{KeyCode,KeySym};
+use x11::xlib::{KeyCode,KeySym};
 use xserver::{XServer,keysym_to_string};
 
 bitflags! {

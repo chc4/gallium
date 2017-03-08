@@ -32,13 +32,7 @@ pub trait Layout {
     fn apply(&self, screen: u32, xserv: &mut XServer, work: &mut Workspace, conf: &mut Config){
         println!("Layout.apply unimplemented");
     }
-    fn add(&mut self, &mut Window, xserv: &mut XServer){
-        println!("Layout.add unimplemented");
-    }
-    fn remove(&mut self, usize, xserv: &mut XServer){
-        println!("Layout.remove unimplemented");
-    }
-    fn special(&mut self, SpecialMsg){
+    fn message(&mut self, SpecialMsg){
         println!("Layout.special unimplemented");
     }
 }
@@ -145,11 +139,18 @@ impl Layout for TallLayout {
         }
         }  // non-lexical borrows when
         for wind in work.windows.cards.iter_mut().filter(|wind| wind.floating) {
+            wind.shown = true;
             xserv.refresh(wind);
         }
+        work.windows.index.map(|wind|{
+            let ref mut wind = &mut work.windows.cards[wind];
+            wind.shown = true;
+            xserv.refresh(wind);
+            unsafe { xserv.bring_to_front(wind.wind_ptr); } // XX MAY BE HORRIBLY WRONG
+        });
     }
 
-    fn special(&mut self, msg: SpecialMsg){
+    fn message(&mut self, msg: SpecialMsg){
         match msg {
             SpecialMsg::Add => if self.master < 5 {
                 self.master+=1;
@@ -168,13 +169,6 @@ impl Layout for TallLayout {
                 }
             }
         }
-    }
-
-    fn add(&mut self, wind: &mut Window, xserv: &mut XServer){
-        trace!("Added a new window, yaaay");
-    }
-    fn remove(&mut self, ind: usize, xserv: &mut XServer){
-        trace!("Removed window {}, oh nooo",ind);
     }
 }
 
@@ -197,20 +191,13 @@ impl Layout for FullLayout {
             xserv.refresh(wind);
         }
         focus.map(|wind|{
-            warn!("focus.map");
             let ref mut wind = &mut work.windows.cards[wind];
             wind.shown = true;
             xserv.refresh(wind);
-            //unsafe { xserv.bring_to_front(wind.wind_ptr); } // XX MAY BE HORRIBLY WRONG
+            unsafe { xserv.bring_to_front(wind.wind_ptr); } // XX MAY BE HORRIBLY WRONG
         });
     }
-    fn add(&mut self, wind: &mut Window, xserv: &mut XServer){
-        println!("Layout.add unimplemented");
-    }
-    fn remove(&mut self, ind: usize, xserv: &mut XServer){
-        println!("Layout.remove unimplemented");
-    }
-    fn special(&mut self, msg: SpecialMsg){
+    fn message(&mut self, msg: SpecialMsg){
         println!("Layout.special unimplemented");
     }
 }

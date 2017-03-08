@@ -4,17 +4,18 @@ name = "gallium"
 version = "0.0.1"
 authors = ["Charlie Cummings <chc4000@gmail.com>"]
 
-[dependencies.xlib]
-git = "https://github.com/servo/rust-xlib.git"
-
-[dependencies.rustc-serialize]
-rustc-serialize = "0.2.8"
-
 [dependencies.log]
 log = "*"
 
+[dependencies.xcb]
+version = "^0.7"
+features = ["xlib_xcb"]
+
 [dependencies]
-bitflags = "0.1"
+bitflags = "^0.1"
+rustc-serialize = "0.3"
+libc = "*"
+x11 = "*"
 
 [[bin]]
 name = "gallium"

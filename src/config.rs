@@ -1,5 +1,3 @@
-extern crate xlib;
-extern crate rustc_serialize;
 use std::env::home_dir;
 use std::sync::RwLock;
 use rustc_serialize::{Encodable,Decodable,json,Encoder,Decoder};
