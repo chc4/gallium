@@ -17,7 +17,9 @@ shadows.
 
 
 A WM written in Rust, inspired and based loosely off of Kintaro's wtftw project.
-This is a toy project. Don't even think about using it.
+This is a toy project.
+
+(I've actually been using it as my WM in an Arch VM for a few years now. It's workable, but feature-lite, and probably has bugs that I just never run into since my setup doesn't change. Also it crashes from some dialog boxes since it doesn't do ewmh hints - you'll want `export GPG_AGENT_INFO=""` at the least so it prompts from the console instead of popup.)
 
 Currently supports:
 * Customizable keybindings
@@ -27,13 +29,9 @@ Currently supports:
 * ???
 
 Still to do:
-* Better color serialization/config
-* Switch to TOML(YAML?) for config over JSON
 * More keybinds (sending windows across workspaces, etc.)
 * Hot-reloading of WM without losing all your windows
-* Probably rethink how layouts work since they kinda suck??
 * More layout options (BSP?)
-* Floating windows
 * Per-window tweaks
 * EWMH exporting
 
