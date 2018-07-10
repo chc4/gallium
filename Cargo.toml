@@ -4,18 +4,24 @@ name = "gallium"
 version = "0.0.1"
 authors = ["Charlie Cummings <chc4000@gmail.com>"]
 
-[dependencies.log]
-log = "*"
+[dependencies.xlib]
+git = "https://github.com/servo/rust-xlib.git"
 
+[dependencies.rustc-serialize]
+rustc-serialize = "0.2.8"
+
+[dependencies.log]
+log = "= 0.3.7"
+
+<<<<<<< HEAD
 [dependencies.xcb]
-version = "^0.7"
+version = "0.8"
 features = ["xlib_xcb"]
 
+=======
+>>>>>>> parent of a3f5ab3... use rust-xcb
 [dependencies]
-bitflags = "^0.1"
-rustc-serialize = "0.3"
-libc = "*"
-x11 = "*"
+bitflags = "0.1"
 
 [[bin]]
 name = "gallium"
