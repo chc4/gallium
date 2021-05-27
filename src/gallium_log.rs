@@ -1,32 +1,34 @@
 extern crate log;
-use log::{LogRecord, LogLevel, LogLevelFilter, LogMetadata, SetLoggerError};
+use log::{Record, Level, LevelFilter, Metadata, SetLoggerError};
 
 pub struct GalliumLog;
 
 impl log::Log for GalliumLog {
-    fn enabled(&self, metadata: &LogMetadata) -> bool {
-        metadata.level() != LogLevel::Trace
+    fn enabled(&self, metadata: &Metadata) -> bool {
+        metadata.level() != Level::Trace
     }
 
-    fn log(&self, record: &LogRecord) {
+    fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
             let mark = match record.level() {
-                LogLevel::Error => "!!!",
-                LogLevel::Warn => "!",
-                LogLevel::Info => ">",
-                LogLevel::Debug => "+",
-                LogLevel::Trace => "-",
+                Level::Error => "!!!",
+                Level::Warn => "!",
+                Level::Info => ">",
+                Level::Debug => "+",
+                Level::Trace => "-",
             };
             println!("[{}] {}", mark, record.args());
         }
     }
+
+    fn flush(&self) { }
 }
 
+static MY_LOGGER: GalliumLog = GalliumLog;
 impl GalliumLog {
     pub fn init() -> Result<(), SetLoggerError> {
-        log::set_logger(|max_log_level| {
-            max_log_level.set(LogLevelFilter::Debug);
-            Box::new(GalliumLog)
-        })
+        log::set_logger(&MY_LOGGER)?;
+        log::set_max_level(LevelFilter::Debug);
+        Ok(())
     }
 }
